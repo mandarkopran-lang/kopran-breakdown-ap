@@ -1,0 +1,10 @@
+{
+  "name": "Breakdown Reporting and Tracking",
+  "description": "Full-stack application for managing machine breakdown reporting and resolution tracking in a manufacturing company.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
