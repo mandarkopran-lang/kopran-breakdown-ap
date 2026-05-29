@@ -114,7 +114,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.between,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
                           '🚨 REPORT NEW BREAKDOWN',
@@ -452,7 +452,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (isSupervisor || isAdmin || isPlantManager) ...[
                 ElevatedButton.icon(
                   icon: const Icon(Icons.add_circle_outline),
-                  label: const Text('REPORT & DISPATCH NEW BREAKDOWN', style: TextStyle(fontWeight: FontWeight.w900, size: 12)),
+                  label: const Text('REPORT & DISPATCH NEW BREAKDOWN', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0F766E), // Teal Accent Design
                     foregroundColor: Colors.white,
@@ -550,7 +550,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.between,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     issue['id'] ?? 'BD-XXXX',
@@ -583,7 +583,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(height: 12),
               Row(
-                mainAxisAlignment: MainAxisAlignment.between,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
