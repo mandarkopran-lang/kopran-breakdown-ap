@@ -26,6 +26,22 @@ jobs:
         with:
           channel: 'stable'
 
+      - name: Generate Android Project Boilerplate
+        run: |
+          cd flutter_app
+          # Back up the original code and pubspec
+          cp -r lib lib_backup
+          cp pubspec.yaml pubspec_backup.yaml
+          
+          # Force create the android project structure with native Android support
+          flutter create --project-name=kopran_breakdown_app --overwrite --org com.kopran.breakdown --platforms=android .
+          
+          # Restore the original user code and pubspec
+          rm -rf lib
+          mv lib_backup lib
+          rm -f pubspec.yaml
+          mv pubspec_backup.yaml pubspec.yaml
+
       - name: Install Dependencies
         run: |
           cd flutter_app
