@@ -1,0 +1,56 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+
+      - name: Reconstruct Android Build Environment
+        run: |
+          cd flutter_app
+          # Back up your customized dependencies
+          cp pubspec.yaml pubspec_backup.yaml
+          
+          # Recreate missing build files (like the android/ directory) on-the-fly
+          flutter create . --org com.kopran.breakdown --project-name kopran_breakdown_app
+          
+          # Restore customized deps and main entrycode
+          mv pubspec_backup.yaml pubspec.yaml
+
+      - name: Install Dependencies
+        run: |
+          cd flutter_app
+          flutter pub get
+
+      - name: Build APK for Release
+        run: |
+          cd flutter_app
+          flutter build apk --release
+
+      - name: Upload APK Release Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: kopran_breakdown_app_apk
+          path: flutter_app/build/app/outputs/flutter-apk/app-release.apk
