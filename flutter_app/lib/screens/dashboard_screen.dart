@@ -452,7 +452,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (isSupervisor || isAdmin || isPlantManager) ...[
                 ElevatedButton.icon(
                   icon: const Icon(Icons.add_circle_outline),
-                  label: const Text('REPORT & DISPATCH NEW BREAKDOWN', style: TextStyle(fontWeight: FontWeight.w900, fontsize: 12)),
+                  label: const Text('REPORT & DISPATCH NEW BREAKDOWN', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0F766E), // Teal Accent Design
                     foregroundColor: Colors.white,
