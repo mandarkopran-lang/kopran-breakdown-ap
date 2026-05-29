@@ -381,7 +381,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               controller: _searchController,
                               style: const TextStyle(fontSize: 11),
                               decoration: const InputDecoration(
-                                prefixIcon: Icon(Icons.search, fontsize: 16),
+                                prefixIcon: Icon(Icons.search, size: 16),
                                 hintText: 'Search machine, ID, desc',
                                 border: InputBorder.none,
                                 isDense: true,
@@ -390,7 +390,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.refresh, fontsize: 18),
+                            icon: const Icon(Icons.refresh, size: 18),
                             onPressed: _refreshDashboard,
                           ),
                         ],
