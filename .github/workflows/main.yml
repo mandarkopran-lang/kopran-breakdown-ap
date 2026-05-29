@@ -42,6 +42,11 @@ jobs:
           rm -f pubspec.yaml
           mv pubspec_backup.yaml pubspec.yaml
 
+          # Explicitly set minSdkVersion to 21 to support image_picker and native dependencies
+          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle || true
+          sed -i 's/minSdkVersion 16/minSdkVersion 21/g' android/app/build.gradle || true
+          sed -i 's/minSdkVersion 19/minSdkVersion 21/g' android/app/build.gradle || true
+
       - name: Install Dependencies
         run: |
           cd flutter_app
