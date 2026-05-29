@@ -180,7 +180,7 @@ class _admin_panel_screenState extends State<admin_panel_screen> {
                   Card(
                     color: Colors.white,
                     elevation: 0.5,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade250 ?? Colors.grey.shade200)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200 ?? Colors.grey.shade200)),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
