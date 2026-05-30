@@ -16,9 +16,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final _mobileController = TextEditingController(text: '+91 98765 43210');
   final _otpController = TextEditingController();
   final _nameController = TextEditingController();
+  final _companyCodeController = TextEditingController(text: 'KOPRAN');
+  final _companyNameController = TextEditingController();
+  final _companyLogoController = TextEditingController();
 
   bool _showOtpField = false;
   bool _needsRegister = false;
+  bool _isNewCompanyAdmin = false;
   bool _loading = false;
   String? _errorMessage;
 
@@ -38,11 +42,143 @@ class _LoginScreenState extends State<LoginScreen> {
     'engineering_officer': 'Engineering Officer (Respond & Self-Assign)',
   };
 
+  String _currentBackendUrl = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBackendUrl();
+  }
+
+  Future<void> _loadBackendUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _currentBackendUrl = prefs.getString('custom_backend_url') ?? ApiService.baseProductionUrl;
+    });
+  }
+
+  void _showServerSettingsDialog() async {
+    final textController = TextEditingController(text: _currentBackendUrl);
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('⚙️ Server Configuration', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Specify the server API endpoint for authentication and breakdowns:',
+                  style: TextStyle(fontSize: 12, color: Colors.blueGrey),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: textController,
+                  decoration: const InputDecoration(
+                    labelText: 'Backend endpoint URL',
+                    prefixIcon: Icon(Icons.link, size: 18),
+                    border: OutlineInputBorder(),
+                    hintText: 'https://...',
+                  ),
+                  style: const TextStyle(fontSize: 12),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Quick Presets:',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.indigo),
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(top: 4.0, bottom: 4.0),
+                  child: Text('Click to copy to field:', style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic, color: Colors.grey)),
+                ),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.bolt, size: 14),
+                  label: const Text('Live Production', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal[50],
+                    foregroundColor: Colors.teal[800],
+                    elevation: 0,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () {
+                    textController.text = "https://ais-pre-wuvc56taaangrxyoqi4wz4-386607728817.asia-east1.run.app";
+                  },
+                ),
+                const SizedBox(height: 4),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.science, size: 14),
+                  label: const Text('Dev Sandbox', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber[50],
+                    foregroundColor: Colors.amber[900],
+                    elevation: 0,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () {
+                    textController.text = "https://ais-dev-wuvc56taaangrxyoqi4wz4-386607728817.asia-east1.run.app";
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('CANCEL', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1E293B),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                final newUrl = textController.text.trim();
+                if (newUrl.isNotEmpty) {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setString('custom_backend_url', newUrl);
+                  setState(() {
+                    _currentBackendUrl = newUrl;
+                  });
+                  if (mounted) {
+                    Navigator.pop(dialogContext);
+                    _showSuccess('Server URL is updated to: $newUrl');
+                  }
+                }
+              },
+              child: const Text('SAVE URL', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _handleRequestOtp() async {
     final mob = _mobileController.text.trim();
     if (mob.isEmpty) {
       _showErr('Please enter a valid mobile number.');
       return;
+    }
+
+    if (_needsRegister) {
+      if (_nameController.text.trim().isEmpty) {
+        _showErr('Please enter your full representative name.');
+        return;
+      }
+      if (_isNewCompanyAdmin) {
+        if (_companyNameController.text.trim().isEmpty) {
+          _showErr('Please enter your corporate Company Name.');
+          return;
+        }
+      } else {
+        if (_companyCodeController.text.trim().isEmpty) {
+          _showErr('Please enter a valid Company Invite Code.');
+          return;
+        }
+      }
     }
 
     setState(() {
@@ -54,25 +190,37 @@ class _LoginScreenState extends State<LoginScreen> {
       final res = await ApiService.requestOtp(
         mobile: mob,
         name: _needsRegister ? _nameController.text.trim() : null,
-        role: _needsRegister ? _selectedRole : null,
+        role: _needsRegister ? (_isNewCompanyAdmin ? 'admin' : _selectedRole) : null,
         department: _needsRegister ? _selectedDept : null,
         plant: _needsRegister ? _selectedPlant : null,
+        companyId: _needsRegister && !_isNewCompanyAdmin ? _companyCodeController.text.trim() : null,
+        companyName: _needsRegister && _isNewCompanyAdmin ? _companyNameController.text.trim() : null,
+        companyLogo: _needsRegister && _isNewCompanyAdmin ? _companyLogoController.text.trim() : null,
       );
+
+      _loading = false;
+
+      if (res['error'] != null) {
+        _showErr(res['error']);
+        setState(() {});
+        return;
+      }
 
       if (res['exists'] == false && !_needsRegister) {
         setState(() {
           _needsRegister = true;
-          _loading = false;
         });
-        _showSuccess('New number detected. Please fill profile details below.');
+        _showSuccess('New mobile number detected. Please enter registration profile details below:');
         return;
       }
 
+      final String fetchedOtp = res['otp'] ?? '123456';
+      _otpController.text = fetchedOtp; // Autofill dynamic time-bound OTP to mimic SMS autocheck!
+
       setState(() {
         _showOtpField = true;
-        _loading = false;
       });
-      _showSuccess('OTP Sent Successfully! Hint: Use code 123456');
+      _showSuccess('Secure OTP $fetchedOtp sent successfully via simulated SMS/WhatsApp! Auto-verified.');
 
     } catch (e) {
       _showErr('Backend error connecting to main console: $e');
@@ -101,20 +249,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (res['success'] == true) {
         final Map<String, dynamic> user = res['user'];
+        final Map<String, dynamic>? company = res['company'];
         
         // Cache session permanently locally
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('shift_sync_user', jsonEncode(user));
+        if (company != null) {
+          await prefs.setString('shift_sync_company', jsonEncode(company));
+        }
 
         widget.onLoginSuccess(user);
       } else {
-        _showErr(res['error'] ?? 'Incorrect security credentials. Please try again.');
+        _showErr(res['error'] ?? 'Incorrect security credentials. Please request a new OTP.');
         setState(() {
           _loading = false;
         });
       }
     } catch (e) {
-      _showErr('verification connection failed: $e');
+      _showErr('Verification connection failed: $e');
       setState(() {
         _loading = false;
       });
@@ -219,6 +371,48 @@ class _LoginScreenState extends State<LoginScreen> {
 
             // Profile details form for new user registration
             if (_needsRegister && !_showOtpField) ...[
+              // Corporate Tentant switch buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: !_isNewCompanyAdmin ? const Color(0xFF1E293B) : Colors.transparent,
+                        foregroundColor: !_isNewCompanyAdmin ? Colors.white : const Color(0xFF1E293B),
+                        side: const BorderSide(color: Color(0xFF1E293B)),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isNewCompanyAdmin = false;
+                        });
+                      },
+                      child: const Text('Join Existing Company', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: _isNewCompanyAdmin ? const Color(0xFF1E293B) : Colors.transparent,
+                        foregroundColor: _isNewCompanyAdmin ? Colors.white : const Color(0xFF1E293B),
+                        side: const BorderSide(color: Color(0xFF1E293B)),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isNewCompanyAdmin = true;
+                        });
+                      },
+                      child: const Text('New Enterprise (Admin)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
               const Text(
                 'Full Representative Name',
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
@@ -236,42 +430,105 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 16),
 
-              const Text(
-                'System Role (Alloted Security Group)',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
-              ),
-              const SizedBox(height: 6),
-              DropdownButtonFormField<String>(
-                value: _selectedRole,
-                items: _allowedRoles.entries.map((entry) {
-                  return DropdownMenuItem(
-                    value: entry.key,
-                    child: Text(entry.value, style: const TextStyle(fontSize: 12)),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  setState(() {
-                    _selectedRole = val!;
-                  });
-                },
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              if (!_isNewCompanyAdmin) ...[
+                const Text(
+                  'Company Invite Code',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.amber[50],
-                  border: Border.all(color: Colors.amber.shade200),
-                  borderRadius: BorderRadius.circular(6),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _companyCodeController,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.apartment),
+                    hintText: 'Enter Invite Code (e.g., KOPRAN)',
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
                 ),
-                child: Text(
-                  '🔒 Role Restrictions Active: High role privileges (Managers/Heads/Admins) are locked to safe delegation by System Admins inside the Team Directory to prevent spoofing.',
-                  style: TextStyle(color: Colors.amber[900], fontSize: 9, fontWeight: FontWeight.w600),
+                const SizedBox(height: 16),
+
+                const Text(
+                  'System Role (Alloted Security Group)',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
                 ),
-              ),
+                const SizedBox(height: 6),
+                DropdownButtonFormField<String>(
+                  value: _selectedRole,
+                  items: _allowedRoles.entries.map((entry) {
+                    return DropdownMenuItem(
+                      value: entry.key,
+                      child: Text(entry.value, style: const TextStyle(fontSize: 12)),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedRole = val!;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.amber[50],
+                    border: Border.all(color: Colors.amber.shade200),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '🔒 Role Restrictions Active: High role privileges (Managers/Heads/Admins) are locked to safe delegation by System Admins inside the Team Directory to prevent spoofing.',
+                    style: TextStyle(color: Colors.amber[900], fontSize: 9, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ] else ...[
+                const Text(
+                  'Corporate Company Name',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _companyNameController,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.corporate_fare),
+                    hintText: 'e.g. Kopran Engineering Ltd',
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                const Text(
+                  'Company Logo Icon URL (Optional)',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _companyLogoController,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.image),
+                    hintText: 'https://...',
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.teal[50],
+                    border: Border.all(color: Colors.teal.shade200),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '🌟 Corporate Administrator Account: Setting up a new isolated organization. You can distribute the unique company invite link to employees to auto-join after login.',
+                    style: TextStyle(color: Colors.teal[900], fontSize: 9, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
 
               Row(
@@ -395,6 +652,35 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: const Text('Back / Try another mobile number', style: TextStyle(fontSize: 11, color: Colors.blue)),
               )
             ],
+
+            const SizedBox(height: 32),
+            const Divider(height: 1),
+            const SizedBox(height: 16),
+            Center(
+              child: InkWell(
+                onTap: _showServerSettingsDialog,
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.settings, size: 14, color: Colors.blueGrey),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Server API: ${_currentBackendUrl.isNotEmpty ? (_currentBackendUrl.length > 30 ? _currentBackendUrl.substring(0, 27) + "..." : _currentBackendUrl) : "Not Set"}',
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

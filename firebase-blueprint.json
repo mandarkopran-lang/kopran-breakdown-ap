@@ -1,0 +1,201 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Plant operator, engineer, supervisor, or manager profiles",
+      "type": "object",
+      "properties": {
+        "mobile": {
+          "type": "string",
+          "description": "Unique mobile number with country code"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the user"
+        },
+        "role": {
+          "type": "string",
+          "description": "User role: supervisor, engineer, admin, plant_manager, qa_manager, engineering_head, engineering_manager, engineering_officer"
+        },
+        "department": {
+          "type": "string",
+          "description": "Department assignment"
+        },
+        "plant": {
+          "type": "string",
+          "description": "Plant assignment: Plant 1, Plant 2, or Both"
+        },
+        "otp": {
+          "type": "string",
+          "description": "Last sent verification code"
+        }
+      },
+      "required": ["mobile", "name", "role"]
+    },
+    "Issue": {
+      "title": "Issue",
+      "description": "Asset breakdown ticket log to monitor repair operations",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Breakdown reference: BD-YYYYMMDD-XXXX"
+        },
+        "plant": {
+          "type": "string",
+          "description": "Raised plant location"
+        },
+        "department": {
+          "type": "string",
+          "description": "Department owner matching machine area"
+        },
+        "area": {
+          "type": "string",
+          "description": "Sub-area zone inside plant"
+        },
+        "machine": {
+          "type": "string",
+          "description": "Target broken machinery asset name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Breakdown description and symptoms"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "Optional attachment URL photo"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Mobile ID of supervisor who raised breakdown"
+        },
+        "createdByName": {
+          "type": "string",
+          "description": "Name of reporter"
+        },
+        "createdDateTime": {
+          "type": "string",
+          "description": "Timestamp breakdown was reported"
+        },
+        "status": {
+          "type": "string",
+          "description": "Workflow phase: open, assigned, in_progress, resolved, closed"
+        },
+        "assignedTo": {
+          "type": "string",
+          "description": "Mobile number of assigned maintenance engineer"
+        },
+        "assignedToName": {
+          "type": "string",
+          "description": "Name of assigned engineer"
+        },
+        "assignmentDateTime": {
+          "type": "string",
+          "description": "Timestamp of engineer assignment"
+        },
+        "resolvedDateTime": {
+          "type": "string",
+          "description": "Timestamp of repair completion"
+        },
+        "closureDateTime": {
+          "type": "string",
+          "description": "Timestamp supervisor verified and closed"
+        },
+        "resolutionRemarks": {
+          "type": "string",
+          "description": "Resolution write-up by engineer"
+        },
+        "slaMinutes": {
+          "type": "integer",
+          "description": "Target response duration"
+        },
+        "escalationStatus": {
+          "type": "string",
+          "description": "Escalation state: normal, due_soon, escalated"
+        },
+        "aiRecommendations": {
+          "type": "object",
+          "description": "Gemini AI smart diagnostic outcomes"
+        },
+        "history": {
+          "type": "array",
+          "description": "Audit trail log of changes"
+        }
+      },
+      "required": ["id", "plant", "machine", "status", "createdBy"]
+    },
+    "WhatsappLog": {
+      "title": "WhatsappLog",
+      "description": "Log of dispatched WhatsApp status reminders",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "recipient": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "apiUsed": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "timestamp", "recipient", "message"]
+    },
+    "ScheduledReport": {
+      "title": "ScheduledReport",
+      "description": "Auto-scheduled report notification configurations",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "frequency": {
+          "type": "string"
+        },
+        "time": {
+          "type": "string"
+        },
+        "recipientGroup": {
+          "type": "string"
+        },
+        "active": {
+          "type": "boolean"
+        }
+      },
+      "required": ["id", "type", "frequency", "time"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": "User",
+      "description": "Collection of employee profiles"
+    },
+    "issues": {
+      "schema": "Issue",
+      "description": "Breakdown records and tracking"
+    },
+    "whatsappLogs": {
+      "schema": "WhatsappLog",
+      "description": "SLA dispatch histories"
+    },
+    "scheduledReports": {
+      "schema": "ScheduledReport",
+      "description": "Cron configurations"
+    }
+  }
+}

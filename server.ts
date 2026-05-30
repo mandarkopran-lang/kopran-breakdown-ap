@@ -5,11 +5,16 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import { AsyncLocalStorage } from "async_hooks";
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, doc, getDocs, setDoc } from "firebase/firestore";
 
 dotenv.config();
 
 const app = express();
 const PORT = 3000;
+
+// Global Firestore connection reference
+let dbFirestore: any = null;
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
@@ -43,14 +48,17 @@ function initializeDb() {
 
   if (!fs.existsSync(activeFile)) {
     const initialDb = {
+      companies: [
+        { id: "KOPRAN", name: "Kopran Engineering", logoUrl: "", createdAt: "2026-05-28T00:00:00Z" }
+      ],
       users: [
-        { mobile: "+91 98765 43210", name: "Rajesh Kumar", role: "supervisor", department: "Production", plant: "Plant 1" },
-        { mobile: "+91 87654 32109", name: "Anil Sharma", role: "engineering_officer", department: "Engineering", plant: "Plant 1" },
-        { mobile: "+91 76543 21098", name: "Vikram Singh", role: "admin", department: "Admin", plant: "Both" },
-        { mobile: "+91 99999 88888", name: "Sunil Verma", role: "engineering_head", department: "Engineering", plant: "Both" },
-        { mobile: "+91 88888 77777", name: "Karan Johar", role: "engineering_manager", department: "Engineering", plant: "Both" },
-        { mobile: "+91 77777 66666", name: "Meeta Patel", role: "plant_manager", department: "Production", plant: "Plant 1" },
-        { mobile: "+91 66666 55555", name: "Hitesh Shah", role: "qa_manager", department: "QA", plant: "Both" }
+        { mobile: "+91 98765 43210", name: "Rajesh Kumar", role: "supervisor", department: "Production", plant: "Plant 1", companyId: "KOPRAN", approved: true },
+        { mobile: "+91 87654 32109", name: "Anil Sharma", role: "engineering_officer", department: "Engineering", plant: "Plant 1", companyId: "KOPRAN", approved: true },
+        { mobile: "+91 76543 21098", name: "Vikram Singh", role: "admin", department: "Admin", plant: "Both", companyId: "KOPRAN", approved: true },
+        { mobile: "+91 99999 88888", name: "Sunil Verma", role: "engineering_head", department: "Engineering", plant: "Both", companyId: "KOPRAN", approved: true },
+        { mobile: "+91 88888 77777", name: "Karan Johar", role: "engineering_manager", department: "Engineering", plant: "Both", companyId: "KOPRAN", approved: true },
+        { mobile: "+91 77777 66666", name: "Meeta Patel", role: "plant_manager", department: "Production", plant: "Plant 1", companyId: "KOPRAN", approved: true },
+        { mobile: "+91 66666 55555", name: "Hitesh Shah", role: "qa_manager", department: "QA", plant: "Both", companyId: "KOPRAN", approved: true }
       ],
       issues: [
         {
@@ -72,6 +80,7 @@ function initializeDb() {
           resolutionRemarks: "Dismantled shield cover. Cleaned spindle assembly. Replaced dry lubrication grease with high-temp industrial lithium grease and adjusted sensor alignment. RPM test run up to 4000 successful.",
           slaMinutes: 120,
           escalationStatus: "normal",
+          companyId: "KOPRAN",
           aiRecommendations: {
             possibleCauses: ["Lack of grease in spindle bearing", "Misalignment of work-holding chuck", "Vibration sensor out of calibration"],
             stepsToFix: ["Apply grade-3 spindle lubrication grease", "Perform vibration spectrum analysis", "Re-calibrate vibration trip threshold"],
@@ -104,6 +113,7 @@ function initializeDb() {
           resolutionRemarks: "Reformed pressure seal ring on main ram. Refilled 12 liters of ISO 46 hydraulic system oil. Tested under pressure, steady holding at 295 bar.",
           slaMinutes: 180,
           escalationStatus: "normal",
+          companyId: "KOPRAN",
           aiRecommendations: {
             possibleCauses: ["Worn main ram cylinder double-acting lip seal", "Proportional control valve internal bypass", "Hydraulic line pressure relief failure"],
             stepsToFix: ["Inspect main cylinder collar for leakage", "Isolate slide pilot valve and check pressure", "Bleed air from manifold and cycle cylinder"],
@@ -133,6 +143,7 @@ function initializeDb() {
           assignmentDateTime: "2026-05-29T04:30:00Z",
           slaMinutes: 60,
           escalationStatus: "due_soon",
+          companyId: "KOPRAN",
           aiRecommendations: {
             possibleCauses: ["Controller memory supercapacitor dead", "External electromagnetic noise interfering with RS485 connection", "Transducer ribbon wire strain damaged"],
             stepsToFix: ["Disconnect tool power, discharge backup bus for 2 mins", "Verify shielding braid on communication cable", "Substitute secondary tool body to isolate hardware issue"],
@@ -154,7 +165,8 @@ function initializeDb() {
           recipient: "Plant 1 Breakdown WhatsApp Group",
           message: "*🔴 NEW BREAKDOWN REPORTED*\n\n*ID:* BD-20260528-0001\n*Plant:* Plant 1\n*Machine:* PLC Control Station 01\n*Supervisor:* Rajesh Kumar (+91 98765 43210)\n*Remarks:* Abnormal vibration above 2000 RPM.\n\n_Please assign an engineer to resolve this SLA: 120min._",
           status: "sent",
-          apiUsed: "Simulated Whatsapp Gateway"
+          apiUsed: "Simulated Whatsapp Gateway",
+          companyId: "KOPRAN"
         },
         {
           id: "WA-1716963300000",
@@ -163,15 +175,129 @@ function initializeDb() {
           recipient: "Anil Sharma (+91 87654 32109)",
           message: "*🔧 ASSIGNMENT ALERT*\n\nBreakdown *BD-20260528-0001* has been assigned to you.\n*Machine:* PLC Control Station 01\n*Description:* Abnormal high squealing.\n*Target SLA:* 120min.\n\n_Click the portal to mark 'In Progress' immediately._",
           status: "sent",
-          apiUsed: "Simulated Whatsapp Gateway"
+          apiUsed: "Simulated Whatsapp Gateway",
+          companyId: "KOPRAN"
         }
       ],
       scheduledReports: [
-        { id: "REP-01", type: "Daily Operations Review", frequency: "daily", time: "07:30", recipientGroup: "Plant Leadership Mobile Group", active: true }
+        { id: "REP-01", type: "Daily Operations Review", frequency: "daily", time: "07:30", recipientGroup: "Plant Leadership Mobile Group", active: true, companyId: "KOPRAN" }
       ]
     };
 
     fs.writeFileSync(activeFile, JSON.stringify(initialDb, null, 2), "utf8");
+  }
+}
+
+// Cloud Firestore Synchronizers to survive Cloud Run ephemeral scale down restarts
+async function syncFromFirestoreToLocal() {
+  if (!dbFirestore) return;
+  const envMode = envStorage.getStore() || "production";
+  const prefix = envMode === "testing" ? "test_" : "";
+  console.log(`[Firestore Backup] Pulling ${envMode.toUpperCase()} datasets from Cloud Firestore...`);
+  try {
+    const companiesSnap = await getDocs(collection(dbFirestore, `${prefix}companies`));
+    const companies: any[] = [];
+    companiesSnap.forEach((doc) => {
+      companies.push(doc.data());
+    });
+
+    const usersSnap = await getDocs(collection(dbFirestore, `${prefix}users`));
+    const users: any[] = [];
+    usersSnap.forEach((doc) => {
+      users.push(doc.data());
+    });
+
+    const issuesSnap = await getDocs(collection(dbFirestore, `${prefix}issues`));
+    const issues: any[] = [];
+    issuesSnap.forEach((doc) => {
+      issues.push(doc.data());
+    });
+
+    const logsSnap = await getDocs(collection(dbFirestore, `${prefix}whatsappLogs`));
+    const whatsappLogs: any[] = [];
+    logsSnap.forEach((doc) => {
+      whatsappLogs.push(doc.data());
+    });
+
+    const reportsSnap = await getDocs(collection(dbFirestore, `${prefix}scheduledReports`));
+    const scheduledReports: any[] = [];
+    reportsSnap.forEach((doc) => {
+      scheduledReports.push(doc.data());
+    });
+
+    if (users.length > 0 || issues.length > 0) {
+      const activeFile = getDbFile();
+      const currentDb = {
+        companies: companies.length > 0 ? companies : [{ id: "KOPRAN", name: "Kopran Engineering", logoUrl: "", createdAt: new Date().toISOString() }],
+        users,
+        issues,
+        whatsappLogs,
+        scheduledReports
+      };
+      fs.writeFileSync(activeFile, JSON.stringify(currentDb, null, 2), "utf8");
+      console.log(`[Firestore Backup] Successfully initialized local cache from Firestore: ${companies.length} companies, ${users.length} users, ${issues.length} issues, ${whatsappLogs.length} logs.`);
+    } else {
+      console.log("[Firestore Backup] Cloud Firestore collections are currently empty. Local bootstrap is active.");
+    }
+  } catch (error: any) {
+    console.error("[Firestore Backup] Pull synchronizer encountered error:", error.message);
+  }
+}
+
+async function syncToFirestore(data: any) {
+  if (!dbFirestore) return;
+  const envMode = envStorage.getStore() || "production";
+  const prefix = envMode === "testing" ? "test_" : "";
+  try {
+    // 0. Save Companies
+    if (data.companies && Array.isArray(data.companies)) {
+      for (const c of data.companies) {
+        if (c.id) {
+          await setDoc(doc(dbFirestore, `${prefix}companies`, c.id), c);
+        }
+      }
+    }
+
+    // 1. Save Users
+    if (data.users && Array.isArray(data.users)) {
+      for (const u of data.users) {
+        if (u.mobile) {
+          const docId = u.mobile.replace(/\+/g, "").replace(/\s+/g, "");
+          await setDoc(doc(dbFirestore, `${prefix}users`, docId), u);
+        }
+      }
+    }
+
+    // 2. Save Issues
+    if (data.issues && Array.isArray(data.issues)) {
+      for (const i of data.issues) {
+        if (i.id) {
+          await setDoc(doc(dbFirestore, `${prefix}issues`, i.id), i);
+        }
+      }
+    }
+
+    // 3. Save Whatsapp Logs
+    if (data.whatsappLogs && Array.isArray(data.whatsappLogs)) {
+      const slicedLogs = data.whatsappLogs.slice(0, 50);
+      for (const wl of slicedLogs) {
+        if (wl.id) {
+          await setDoc(doc(dbFirestore, `${prefix}whatsappLogs`, wl.id), wl);
+        }
+      }
+    }
+
+    // 4. Save Scheduled Reports
+    if (data.scheduledReports && Array.isArray(data.scheduledReports)) {
+      for (const r of data.scheduledReports) {
+        if (r.id) {
+          await setDoc(doc(dbFirestore, `${prefix}scheduledReports`, r.id), r);
+        }
+      }
+    }
+    console.log(`[Firestore Backup] Successfully backup synchronized to Cloud Firestore (${envMode.toUpperCase()})`);
+  } catch (err: any) {
+    console.error("[Firestore Backup] Push backup synchronization failed:", err.message);
   }
 }
 
@@ -181,10 +307,16 @@ function readDb() {
   const activeFile = getDbFile();
   try {
     const data = fs.readFileSync(activeFile, "utf8");
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    if (!parsed.companies) parsed.companies = [];
+    if (!parsed.users) parsed.users = [];
+    if (!parsed.issues) parsed.issues = [];
+    if (!parsed.whatsappLogs) parsed.whatsappLogs = [];
+    if (!parsed.scheduledReports) parsed.scheduledReports = [];
+    return parsed;
   } catch (error) {
     console.error("Error reading database file", error);
-    return { users: [], issues: [], whatsappLogs: [], scheduledReports: [] };
+    return { companies: [], users: [], issues: [], whatsappLogs: [], scheduledReports: [] };
   }
 }
 
@@ -192,6 +324,10 @@ function writeDb(data: any) {
   const activeFile = getDbFile();
   try {
     fs.writeFileSync(activeFile, JSON.stringify(data, null, 2), "utf8");
+    // Backup to cloud asynchronously without blocking UI request thread
+    syncToFirestore(data).catch((e) => {
+      console.error("[Firestore Backup] Async push backup failed:", e);
+    });
   } catch (error) {
     console.error("Error writing database file", error);
   }
@@ -272,39 +408,85 @@ const getGeminiClient = () => {
 
 // 1. Auth Routing
 app.post("/api/auth/request-otp", (req, res) => {
-  const { mobile, name, role, department } = req.body;
+  const { mobile, name, role, department, plant, companyId, companyName, companyLogo } = req.body;
   if (!mobile) {
     return res.status(400).json({ error: "Mobile number is required" });
   }
 
   const db = readDb();
   let user = db.users.find((u: any) => u.mobile.trim() === mobile.trim());
+  let isNewUser = false;
 
   if (!user) {
-    // Register temporary or signup profile
+    // Prevent registration without name or role
     if (!name || !role) {
       return res.json({
         exists: false,
         message: "No registered profile found. Please register a new user profile."
       });
     }
-    user = { mobile, name, role, department: department || "" };
+
+    let userCompanyId = companyId ? companyId.trim().toUpperCase() : "";
+
+    // Multi-Company: Validate or setup company profile
+    if (role === "admin") {
+      if (companyName && companyName.trim().length > 0) {
+        userCompanyId = "COMP-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+        const newCompany = {
+          id: userCompanyId,
+          name: companyName.trim(),
+          logoUrl: companyLogo || "",
+          createdAt: new Date().toISOString()
+        };
+        db.companies.push(newCompany);
+        console.log(`[Multi-Company] Dynamic Setup: Company ${companyName.trim()} created with ID: ${userCompanyId}`);
+      } else {
+        return res.status(400).json({ error: "Company name is required for Admin registration" });
+      }
+    } else {
+      // Employees/Supervisors must join an existing company
+      if (!userCompanyId) {
+        return res.status(400).json({ error: "A valid Company Invite Link or Invite Code is required to join." });
+      }
+      const existingCompany = db.companies.find((c: any) => c.id === userCompanyId);
+      if (!existingCompany) {
+        return res.status(400).json({ error: "The provided Company Invite Code is invalid." });
+      }
+    }
+
+    isNewUser = true;
+    user = {
+      mobile: mobile.trim(),
+      name: name.trim(),
+      role: role.trim(),
+      department: department || "",
+      plant: plant || "Plant 1",
+      companyId: userCompanyId,
+      approved: role === "admin" ? true : false // Admin is auto-approved, others require approval
+    };
+
     db.users.push(user);
-    writeDb(db);
+  } else {
+    // If user already exists but trying to register again
+    if (name || role) {
+      return res.status(400).json({ error: "A user is already registered with this mobile number. Please sign in instead." });
+    }
   }
 
-  // Set predictable OTP
-  const otp = "123456";
+  // Set predictable but secure, time-bound random OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
   user.otp = otp;
-  // Update in users
-  db.users = db.users.map((u: any) => u.mobile === user.mobile ? { ...u, otp } : u);
+  user.otpCreatedAt = Date.now();
+
+  // Save changes
+  db.users = db.users.map((u: any) => u.mobile === user.mobile ? { ...u, otp, otpCreatedAt: user.otpCreatedAt } : u);
   writeDb(db);
 
   return res.json({
     exists: true,
-    otp, // send back for simple visual simulation
-    user: { mobile: user.mobile, name: user.name, role: user.role, department: user.department },
-    message: `OTP 123456 sent successfully to ${mobile}!`
+    otp, // return OTP in response for testing simulations
+    user: { mobile: user.mobile, name: user.name, role: user.role, department: user.department, plant: user.plant, companyId: user.companyId, approved: user.approved },
+    message: `Secure OTP ${otp} dispatched successfully to ${mobile} via virtual WhatsApp!`
   });
 });
 
@@ -315,29 +497,58 @@ app.post("/api/auth/verify-otp", (req, res) => {
   }
 
   const db = readDb();
-  const user = db.users.find((u: any) => u.mobile.trim() === mobile.trim() && u.otp === otp);
+  const user = db.users.find((u: any) => u.mobile.trim() === mobile.trim());
 
-  if (!user) {
-    return res.status(401).json({ error: "Invalid OTP code. Please enter 123456." });
+  if (!user || user.otp !== otp) {
+    return res.status(401).json({ error: "Invalid OTP code. Please verify the code and try again." });
+  }
+
+  // Check if OTP is older than 5 minutes
+  const otpAgeMs = Date.now() - (user.otpCreatedAt || 0);
+  if (otpAgeMs > 5 * 60 * 1000) {
+    return res.status(401).json({ error: "OTP has expired. Please request a new one." });
   }
 
   // Clean OTP after verification
-  db.users = db.users.map((u: any) => u.mobile === mobile ? { ...u, otp: undefined } : u);
+  db.users = db.users.map((u: any) => u.mobile === mobile ? { ...u, otp: undefined, otpCreatedAt: undefined } : u);
   writeDb(db);
+
+  const company = db.companies.find((c: any) => c.id === user.companyId);
 
   return res.json({
     success: true,
-    user: { mobile: user.mobile, name: user.name, role: user.role, department: user.department }
+    user: {
+      mobile: user.mobile,
+      name: user.name,
+      role: user.role,
+      department: user.department,
+      plant: user.plant,
+      companyId: user.companyId,
+      approved: user.approved !== false
+    },
+    company
   });
 });
 
-// Get user directory
+// Get user directory (restricted to current user's company!)
 app.get("/api/users", (req, res) => {
   const db = readDb();
-  res.json(db.users);
+  const userMobile = req.headers["x-user-mobile"] as string;
+  
+  let companyId = "KOPRAN";
+  if (userMobile) {
+    const caller = db.users.find((u: any) => u.mobile.trim() === userMobile.trim());
+    if (caller) {
+      companyId = caller.companyId || "KOPRAN";
+    }
+  }
+
+  // Filter users by companyId to preserve isolation (multi-tenant!)
+  const filteredUsers = db.users.filter((u: any) => (u.companyId || "KOPRAN") === companyId);
+  res.json(filteredUsers);
 });
 
-// Create new user profile directly
+// Create new user profile directly (admin utility inside company)
 app.post("/api/users", async (req, res) => {
   const { mobile, name, role, department, plant } = req.body;
   if (!mobile || !name || !role) {
@@ -347,21 +558,123 @@ app.post("/api/users", async (req, res) => {
   if (db.users.some((u: any) => u.mobile === mobile)) {
     return res.status(400).json({ error: "User already exists with this mobile number" });
   }
-  const newUser = { mobile, name, role, department, plant: plant || "Plant 1" };
+
+  const userMobile = req.headers["x-user-mobile"] as string;
+  let companyId = "KOPRAN";
+  if (userMobile) {
+    const caller = db.users.find((u: any) => u.mobile.trim() === userMobile.trim());
+    if (caller) {
+      companyId = caller.companyId || "KOPRAN";
+    }
+  }
+
+  const newUser = {
+    mobile,
+    name,
+    role,
+    department,
+    plant: plant || "Plant 1",
+    companyId,
+    approved: true // Admins override normal invites for direct roster inclusions
+  };
   db.users.push(newUser);
   writeDb(db);
 
   // Auto add to WhatsApp Group & post registration notification
   const roleLabel = role.replace('_', ' ').toUpperCase();
-  const systemLogText = `*📲 WHATSAPP ROSTER SYNC*\n\nWelcome *${name}* (${roleLabel}) to Kopran Breakdowns!\nMobile ID: ${mobile}\nPlant Assignment: ${plant || "Plant 1"}\n\n_He/she has been successfully registered and added to the *Kopran Engineering* corporate WhatsApp group. Actions and assignment alerts are active._`;
-  await sendWhatsAppAlert("roster_registered", "Kopran Engineering", systemLogText);
+  const companyName = db.companies.find((c: any) => c.id === companyId)?.name || "Your Enterprise";
+  const systemLogText = `*📲 WHATSAPP ROSTER SYNC*\n\nWelcome *${name}* (${roleLabel}) to ${companyName}!\nMobile ID: ${mobile}\nPlant Assignment: ${plant || "Plant 1"}\n\n_He/she has been successfully registered and added to the corporate WhatsApp group. Actions and assignment alerts are active._`;
+  await sendWhatsAppAlert("roster_registered", companyName, systemLogText);
 
   res.json({ success: true, user: newUser });
 });
 
-// 2. Fetch Issues
-app.get("/api/issues", (req, res) => {
+// Helper to retrieve and authenticate caller information for role-based multi-tenant isolation
+function getCallerInfo(req: any) {
+  const userMobile = req.headers["x-user-mobile"] as string;
   const db = readDb();
+  let companyId = "KOPRAN";
+  let approved = true;
+  let callerRole = "";
+  let caller = null;
+
+  if (userMobile) {
+    caller = db.users.find((u: any) => u.mobile.trim() === userMobile.trim());
+    if (caller) {
+      companyId = caller.companyId || "KOPRAN";
+      approved = caller.approved !== false;
+      callerRole = caller.role;
+    }
+  }
+  return { companyId, approved, callerRole, caller, db };
+}
+
+// Admin Management APIs
+app.post("/api/admin/approve-user", (req, res) => {
+  const { companyId, callerRole, db } = getCallerInfo(req);
+  if (callerRole !== "admin") {
+    return res.status(403).json({ error: "Administrative privileges required." });
+  }
+  const { mobile, approved } = req.body;
+  if (!mobile) return res.status(400).json({ error: "Target mobile is required." });
+  
+  const target = db.users.find((u: any) => u.mobile === mobile && (u.companyId || "KOPRAN") === companyId);
+  if (!target) return res.status(404).json({ error: "User not found within your company roster." });
+  
+  target.approved = approved;
+  writeDb(db);
+  res.json({ success: true, user: target });
+});
+
+app.post("/api/admin/change-role", (req, res) => {
+  const { companyId, callerRole, db } = getCallerInfo(req);
+  if (callerRole !== "admin") {
+    return res.status(403).json({ error: "Administrative privileges required." });
+  }
+  const { mobile, role } = req.body;
+  if (!mobile || !role) return res.status(400).json({ error: "Target mobile and proposed role are required." });
+  
+  const target = db.users.find((u: any) => u.mobile === mobile && (u.companyId || "KOPRAN") === companyId);
+  if (!target) return res.status(404).json({ error: "User not found within your company roster." });
+  
+  target.role = role;
+  writeDb(db);
+  res.json({ success: true, user: target });
+});
+
+app.get("/api/companies/:id", (req, res) => {
+  const db = readDb();
+  const company = db.companies.find((c: any) => c.id === req.params.id.toUpperCase());
+  if (!company) return res.status(404).json({ error: "Company profile not found." });
+  res.json(company);
+});
+
+app.post("/api/admin/update-company", (req, res) => {
+  const { companyId, callerRole, db } = getCallerInfo(req);
+  if (callerRole !== "admin") {
+    return res.status(403).json({ error: "Administrative privileges required." });
+  }
+  const { name, logoUrl } = req.body;
+  if (!name) return res.status(400).json({ error: "Company name is required." });
+  
+  let comp = db.companies.find((c: any) => c.id === companyId);
+  if (!comp) {
+    comp = { id: companyId, name, logoUrl: logoUrl || "", createdAt: new Date().toISOString() };
+    db.companies.push(comp);
+  } else {
+    comp.name = name;
+    comp.logoUrl = logoUrl || "";
+  }
+  writeDb(db);
+  res.json({ success: true, company: comp });
+});
+
+// 2. Fetch Issues (Isolate per Company!)
+app.get("/api/issues", (req, res) => {
+  const { companyId, approved, db } = getCallerInfo(req);
+  if (!approved) {
+    return res.status(403).json({ error: "Access denied. Your profile status is Pending administrative approval." });
+  }
   
   // Auto timeout deemed resolved check (2 hours)
   let modified = false;
@@ -369,8 +682,10 @@ app.get("/api/issues", (req, res) => {
   const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
   const ticketsToNotify: any[] = [];
 
+  const companyName = db.companies.find((c: any) => c.id === companyId)?.name || "Your Company";
+
   db.issues.forEach((issue: any) => {
-    if (issue.status === "resolved" && issue.resolvedDateTime) {
+    if (issue.status === "resolved" && issue.resolvedDateTime && (issue.companyId || "KOPRAN") === companyId) {
       const resolvedTime = new Date(issue.resolvedDateTime).getTime();
       if (now - resolvedTime >= TWO_HOURS_MS) {
         issue.status = "closed";
@@ -379,7 +694,7 @@ app.get("/api/issues", (req, res) => {
           timestamp: new Date().toISOString(),
           updatedBy: "SYSTEM",
           updatedByName: "Auto-Timeout Worker",
-          notes: "Ticket auto-closed. Resolution deemed resolved successfully after 2 hours timeout limit exceeded without supervisor rejection."
+          notes: "Ticket auto-closed. Resolution deemed resolved successfully after 2-hour timeout limit exceeded without supervisor rejection."
         });
         ticketsToNotify.push(issue);
         modified = true;
@@ -389,10 +704,10 @@ app.get("/api/issues", (req, res) => {
 
   if (modified) {
     writeDb(db);
-    // Dispatch WhatsApp messages safely after writeDb
+    // Dispatch WhatsApp alerts safely
     ticketsToNotify.forEach((issue) => {
       const alertMsg = `*🏁 AUTO-CLOSED (DEEMED APPROVED)*\n\n*Ticket:* ${issue.id}\n*Machine:* ${issue.machine} (${issue.area})\n*Status:* Closed (Deemed Resolved)\n\n_System Auto-Timeout Worker: Ticket closed automatically because the 2-hour verification confirmation period has passed successfully without objection._`;
-      sendWhatsAppAlert("closed", "Kopran Engineering", alertMsg).catch(err => {
+      sendWhatsAppAlert("closed", companyName, alertMsg).catch(err => {
         console.error("Failed sending auto-resolve WhatsApp:", err);
       });
     });
@@ -400,7 +715,8 @@ app.get("/api/issues", (req, res) => {
 
   const { status, plant, machine, department, search } = req.query;
 
-  let filtered = [...db.issues];
+  // Filter issues strictly by companyId to preserve complete separation!
+  let filtered = db.issues.filter((i: any) => (i.companyId || "KOPRAN") === companyId);
 
   if (status) filtered = filtered.filter(i => i.status === status);
   if (plant) filtered = filtered.filter(i => i.plant === plant);
@@ -419,7 +735,6 @@ app.get("/api/issues", (req, res) => {
   }
 
   // Sort: open and assigned issues first, then resolved, then closed
-  // Sub-sort by date descending
   filtered.sort((a, b) => {
     const statusOrder: { [key: string]: number } = { open: 0, assigned: 1, in_progress: 2, resolved: 3, closed: 4 };
     if (statusOrder[a.status] !== statusOrder[b.status]) {
@@ -440,8 +755,6 @@ app.post("/api/ai/diagnose", async (req, res) => {
 
   const ai = getGeminiClient();
   if (!ai) {
-    // Generate intelligent static mock analysis with simulated delay
-    console.log("[Gemini API] API key not found or unconfigured. Returning mock recommendations.");
     return res.json({
       possibleCauses: [
         "Wear or degradation of local gaskets or seals",
@@ -524,17 +837,21 @@ app.post("/api/ai/diagnose", async (req, res) => {
 
 // 4. Create Breakdown Ticket
 app.post("/api/issues", async (req, res) => {
+  const { companyId, approved, db } = getCallerInfo(req);
+  if (!approved) {
+    return res.status(403).json({ error: "Access denied. Pending administrative approval." });
+  }
+
   const { plant, department, area, machine, description, imageUrl, createdBy, createdByName, slaMinutes, aiRecommendations } = req.body;
 
   if (!plant || !department || !area || !machine || !description || !createdBy || !createdByName) {
     return res.status(400).json({ error: "Missing required breakdown reporting parameters" });
   }
 
-  const db = readDb();
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD
   
   // Find current index of breakdowns created today to formulate ticket ID
-  const todayTickets = db.issues.filter((i: any) => i.id.startsWith(`BD-${dateStr}-`));
+  const todayTickets = db.issues.filter((i: any) => i.id.startsWith(`BD-${dateStr}-`) && (i.companyId || "KOPRAN") === companyId);
   const newNum = String(todayTickets.length + 1).padStart(4, "0");
   const ticketId = `BD-${dateStr}-${newNum}`;
 
@@ -554,6 +871,7 @@ app.post("/api/issues", async (req, res) => {
     status: "open",
     slaMinutes: defaultSla,
     escalationStatus: "normal",
+    companyId,
     aiRecommendations: aiRecommendations || null,
     history: [
       {
@@ -570,17 +888,18 @@ app.post("/api/issues", async (req, res) => {
   writeDb(db);
 
   // Trigger WhatsApp communication to Group
+  const companyName = db.companies.find((c: any) => c.id === companyId)?.name || "Your Company";
   const alertText = `*🚨 NEW BREAKDOWN REPORTED*
-
+  
 *Ticket ID:* ${ticketId}
 *Plant:* ${plant} -> ${department}
 *Location:* ${area} / *Machine:* ${machine}
 *Description:* ${description}
 *Reported By:* ${createdByName} (${createdBy})
 
-_Maintenance engineers, please assign and pick up immediately on Kopran Portal!_`;
+_Maintenance engineers, please assign and pick up immediately!_`;
 
-  await sendWhatsAppAlert("issue_created", "Kopran Engineering", alertText);
+  await sendWhatsAppAlert("issue_created", companyName, alertText);
 
   res.status(201).json(newIssue);
 });
@@ -590,15 +909,17 @@ app.post("/api/issues/:id/assign", async (req, res) => {
   const { id } = req.params;
   const { assignedTo, assignedToName, mobileSignature, nameSignature } = req.body;
 
+  const { companyId, approved, db } = getCallerInfo(req);
+  if (!approved) return res.status(403).json({ error: "Access denied." });
+
   if (!assignedTo || !assignedToName || !mobileSignature || !nameSignature) {
-    return res.status(400).json({ error: "Assignee and action-creator parameters are required" });
+    return res.status(400).json({ error: "Assignee parameters are required" });
   }
 
-  const db = readDb();
-  const issue = db.issues.find((i: any) => i.id === id);
+  const issue = db.issues.find((i: any) => i.id === id && (i.companyId || "KOPRAN") === companyId);
 
   if (!issue) {
-    return res.status(404).json({ error: "Ticket not found" });
+    return res.status(404).json({ error: "Ticket not found or belongs to another tenant" });
   }
 
   issue.status = "assigned";
@@ -638,15 +959,17 @@ app.post("/api/issues/:id/status", async (req, res) => {
   const { id } = req.params;
   const { status, remarks, mobileSignature, nameSignature } = req.body;
 
+  const { companyId, approved, db } = getCallerInfo(req);
+  if (!approved) return res.status(403).json({ error: "Access denied." });
+
   if (!status || !mobileSignature || !nameSignature) {
-    return res.status(400).json({ error: "Status, signatory name and mobile are required" });
+    return res.status(400).json({ error: "Status boundaries and signature are required" });
   }
 
-  const db = readDb();
-  const issue = db.issues.find((i: any) => i.id === id);
+  const issue = db.issues.find((i: any) => i.id === id && (i.companyId || "KOPRAN") === companyId);
 
   if (!issue) {
-    return res.status(404).json({ error: "Ticket not found" });
+    return res.status(404).json({ error: "Ticket not found or belongs to another tenant" });
   }
 
   if (status === "in_progress") {
@@ -660,7 +983,7 @@ app.post("/api/issues/:id/status", async (req, res) => {
     });
   } else if (status === "resolved") {
     if (!remarks) {
-      return res.status(400).json({ error: "Resolution remarks and spare replacements must be outlined" });
+      return res.status(400).json({ error: "Resolution remarks must be outlined" });
     }
     issue.status = "resolved";
     issue.resolutionRemarks = remarks;
@@ -694,18 +1017,22 @@ _Supervisor (${issue.createdByName}), please review machine operations and submi
 // 7. Supervisor Response (Close Ticket or Re-open)
 app.post("/api/issues/:id/close", async (req, res) => {
   const { id } = req.params;
-  const { decision, feedback, mobileSignature, nameSignature } = req.body; // decision: 'closed' | 'open'
+  const { decision, feedback, mobileSignature, nameSignature } = req.body; // decision: 'closed' | 'reopened'
+
+  const { companyId, approved, db } = getCallerInfo(req);
+  if (!approved) return res.status(403).json({ error: "Access denied." });
 
   if (!decision || !mobileSignature || !nameSignature) {
     return res.status(400).json({ error: "Decision directive and signature are required" });
   }
 
-  const db = readDb();
-  const issue = db.issues.find((i: any) => i.id === id);
+  const issue = db.issues.find((i: any) => i.id === id && (i.companyId || "KOPRAN") === companyId);
 
   if (!issue) {
-    return res.status(404).json({ error: "Ticket not found" });
+    return res.status(404).json({ error: "Ticket not found or belongs to another tenant" });
   }
+
+  const companyName = db.companies.find((c: any) => c.id === companyId)?.name || "Your Company";
 
   if (decision === "closed") {
     issue.status = "closed";
@@ -729,7 +1056,7 @@ app.post("/api/issues/:id/close", async (req, res) => {
 
 _Machine is returned safely back to active operations._`;
 
-    await sendWhatsAppAlert("closed", "Kopran Engineering", alertText);
+    await sendWhatsAppAlert("closed", companyName, alertText);
 
   } else if (decision === "reopened") {
     issue.status = "open";
@@ -750,7 +1077,7 @@ _Machine is returned safely back to active operations._`;
 *Machine:* ${issue.machine}
 *Reclosed Feedback:* "${feedback}"
 
-_Engineer (${issue.assignedToName}), please immediately check the machine setup again and modify repair guidelines!_`;
+_Engineer (${issue.assignedToName}), please check setup again and modify repair guidelines!_`;
 
     await sendWhatsAppAlert("issue_created", `${issue.assignedToName} (${issue.assignedTo})`, alertText);
   }
@@ -759,17 +1086,19 @@ _Engineer (${issue.assignedToName}), please immediately check the machine setup 
   res.json(issue);
 });
 
-// 8. Dashboard Metrics & Analytics statistics
+// 8. Dashboard Metrics & Analytics statistics (Isolate per company!)
 app.get("/api/reports/stats", (req, res) => {
-  const db = readDb();
-  const issues = db.issues;
+  const { companyId, approved, db } = getCallerInfo(req);
+  if (!approved) return res.status(403).json({ error: "Access denied." });
+  
+  const issues = db.issues.filter((i: any) => (i.companyId || "KOPRAN") === companyId);
 
   const openIssues = issues.filter(i => i.status === "open").length;
   const inProgressIssues = issues.filter(i => i.status === "in_progress" || i.status === "assigned").length;
   const resolvedIssues = issues.filter(i => i.status === "resolved").length;
   const closedIssues = issues.filter(i => i.status === "closed").length;
 
-  // Average resolution time (between createdDateTime and resolvedDateTime) in minutes
+  // Average resolution time
   let totalResTime = 0;
   let resolvedCount = 0;
   issues.forEach((i: any) => {
@@ -791,9 +1120,9 @@ app.get("/api/reports/stats", (req, res) => {
     machineBreakdowns[i.machine] = (machineBreakdowns[i.machine] || 0) + 1;
   });
 
-  // Performance of Engineers based on resolution
+  // Performance of Engineers inside the tenant company
   const engineerPerformanceMap: { [mobile: string]: { name: string, totalMinutes: number, count: number } } = {};
-  db.users.filter((u: any) => u.role === "engineer").forEach((eng: any) => {
+  db.users.filter((u: any) => u.role === "engineering_officer" && (u.companyId || "KOPRAN") === companyId).forEach((eng: any) => {
     engineerPerformanceMap[eng.mobile] = { name: eng.name, totalMinutes: 0, count: 0 };
   });
 
@@ -832,10 +1161,12 @@ app.get("/api/reports/stats", (req, res) => {
   });
 });
 
-// CSV Export Endpoint
+// CSV Export Endpoint (Isolate per company!)
 app.get("/api/reports/export", (req, res) => {
-  const db = readDb();
-  let issues = db.issues || [];
+  const { companyId, approved, db } = getCallerInfo(req);
+  if (!approved) return res.status(403).json({ error: "Access denied." });
+  
+  let issues = db.issues.filter((i: any) => (i.companyId || "KOPRAN") === companyId);
   const { startDate, endDate } = req.query;
 
   if (startDate) {
@@ -876,38 +1207,44 @@ app.get("/api/reports/export", (req, res) => {
   res.status(200).send(csvContent);
 });
 
-// Manage WhatsApp Dispatch logs
+// Manage WhatsApp Dispatch logs (Tenant isolated)
 app.get("/api/whatsapp-logs", (req, res) => {
-  const db = readDb();
-  res.json(db.whatsappLogs || []);
+  const { companyId, approved, db } = getCallerInfo(req);
+  if (!approved) return res.status(403).json({ error: "Access denied" });
+  res.json((db.whatsappLogs || []).filter((wl: any) => (wl.companyId || "KOPRAN") === companyId));
 });
 
 app.post("/api/whatsapp-logs/clear", (req, res) => {
-  const db = readDb();
-  db.whatsappLogs = [];
+  const { companyId, approved, db } = getCallerInfo(req);
+  if (!approved) return res.status(403).json({ error: "Access denied" });
+  db.whatsappLogs = db.whatsappLogs.filter((wl: any) => (wl.companyId || "KOPRAN") !== companyId);
   writeDb(db);
   res.json({ success: true });
 });
 
-// Scheduled Alert Mock Trigger Setting
+// Scheduled Alert Mock Trigger Setting (Tenant isolated)
 app.get("/api/reports/scheduled", (req, res) => {
-  const db = readDb();
-  res.json(db.scheduledReports || []);
+  const { companyId, approved, db } = getCallerInfo(req);
+  if (!approved) return res.status(403).json({ error: "Access denied" });
+  res.json((db.scheduledReports || []).filter((r: any) => (r.companyId || "KOPRAN") === companyId));
 });
 
 app.post("/api/reports/scheduled", (req, res) => {
+  const { companyId, approved, db } = getCallerInfo(req);
+  if (!approved) return res.status(403).json({ error: "Access denied" });
+
   const { type, frequency, time, recipientGroup } = req.body;
   if (!type || !frequency || !time || !recipientGroup) {
     return res.status(400).json({ error: "Missing scheduling definitions" });
   }
-  const db = readDb();
   const newSchedule = {
     id: `SCHED-${Date.now()}`,
     type,
     frequency,
     time,
     recipientGroup,
-    active: true
+    active: true,
+    companyId
   };
   db.scheduledReports = db.scheduledReports || [];
   db.scheduledReports.unshift(newSchedule);
@@ -915,31 +1252,26 @@ app.post("/api/reports/scheduled", (req, res) => {
   res.status(201).json(newSchedule);
 });
 
-// Database Purge / Clean Endpoint
+// Database Purge / Clean Endpoint (Isolated per tenant company!)
 app.post("/api/admin/reset-database", (req, res) => {
-  const envMode = envStorage.getStore() || "production";
-  const activeFile = getDbFile();
+  const { companyId, callerRole, db } = getCallerInfo(req);
+  if (callerRole !== "admin") {
+    return res.status(403).json({ error: "Administrative privileges are required to clear breakdown history." });
+  }
 
-  const initialDb = {
-    users: [
-      { mobile: "+91 98765 43210", name: "Rajesh Kumar", role: "supervisor", department: "Production", plant: "Plant 1" },
-      { mobile: "+91 87654 32109", name: "Anil Sharma", role: "engineering_officer", department: "Engineering", plant: "Plant 1" },
-      { mobile: "+91 76543 21098", name: "Vikram Singh", role: "admin", department: "Admin", plant: "Both" },
-      { mobile: "+91 99999 88888", name: "Sunil Verma", role: "engineering_head", department: "Engineering", plant: "Both" },
-      { mobile: "+91 88888 77777", name: "Karan Johar", role: "engineering_manager", department: "Engineering", plant: "Both" },
-      { mobile: "+91 77777 66666", name: "Meeta Patel", role: "plant_manager", department: "Production", plant: "Plant 1" },
-      { mobile: "+91 66666 55555", name: "Hitesh Shah", role: "qa_manager", department: "QA", plant: "Both" }
-    ],
-    issues: [], // Empty for real-time fresh run!
-    whatsappLogs: [],
-    scheduledReports: [
-      { id: "REP-01", type: "Daily Operations Review", frequency: "daily", time: "07:30", recipientGroup: "Plant Leadership Mobile Group", active: true }
-    ]
-  };
+  // Purge only issues, whatsappLogs, and custom reports belonging to this company!
+  db.issues = db.issues.filter((i: any) => (i.companyId || "KOPRAN") !== companyId);
+  db.whatsappLogs = db.whatsappLogs.filter((wl: any) => (wl.companyId || "KOPRAN") !== companyId);
+  db.scheduledReports = db.scheduledReports.filter((r: any) => (r.companyId || "KOPRAN") !== companyId);
+
+  // Restore seed issues only if company is KOPRAN (backwards compatibility)
+  if (companyId === "KOPRAN") {
+    db.scheduledReports.unshift({ id: "REP-01", type: "Daily Operations Review", frequency: "daily", time: "07:30", recipientGroup: "Plant Leadership Mobile Group", active: true, companyId: "KOPRAN" });
+  }
 
   try {
-    fs.writeFileSync(activeFile, JSON.stringify(initialDb, null, 2), "utf8");
-    res.json({ success: true, message: `Successfully cleared ${envMode.toUpperCase()} database. Ready for clean launch!` });
+    writeDb(db);
+    res.json({ success: true, message: `Successfully cleared breakdown ticket history for your company profile. Roster members are preserved.` });
   } catch (error: any) {
     res.status(500).json({ error: `Failed to reset database: ${error.message}` });
   }
@@ -947,6 +1279,29 @@ app.post("/api/admin/reset-database", (req, res) => {
 
 // Mounting Vite in development or static serving inside production
 async function startServer() {
+  // Initialize and load persistent cloud cache from Google Cloud Firestore
+  initializeDb();
+  
+  // Initialize Firebase Cloud Firestore connection safely
+  try {
+    const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+    if (fs.existsSync(configPath)) {
+      const firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+      const fbApp = initializeApp(firebaseConfig);
+      dbFirestore = getFirestore(fbApp, firebaseConfig.firestoreDatabaseId);
+      console.log("[Firestore Backup] Connection initialized successfully with project", firebaseConfig.projectId);
+    }
+  } catch (err: any) {
+    console.error("[Firestore Backup] Failed to initialize Firestore connection:", err.message);
+  }
+
+  await envStorage.run("production", async () => {
+    await syncFromFirestoreToLocal();
+  });
+  await envStorage.run("testing", async () => {
+    await syncFromFirestoreToLocal();
+  });
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },

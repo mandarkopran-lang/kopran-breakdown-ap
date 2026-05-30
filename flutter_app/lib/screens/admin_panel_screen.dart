@@ -18,6 +18,9 @@ class _admin_panel_screenState extends State<admin_panel_screen> {
 
   final _mobileController = TextEditingController();
   final _nameController = TextEditingController();
+  final _compNameController = TextEditingController();
+  final _compLogoController = TextEditingController();
+
   String _selectedRole = 'engineering_officer';
   String _selectedDept = 'Production';
   String _selectedPlant = 'Plant 1';
@@ -42,6 +45,8 @@ class _admin_panel_screenState extends State<admin_panel_screen> {
   @override
   void initState() {
     super.initState();
+    _compNameController.text = widget.currentUser['companyName'] ?? 'KOPRAN';
+    _compLogoController.text = widget.currentUser['companyLogo'] ?? '';
     _loadDirectory();
   }
 
@@ -87,6 +92,56 @@ class _admin_panel_screenState extends State<admin_panel_screen> {
     }
   }
 
+  Future<void> _approveUser(String mobile, bool approved) async {
+    setState(() => _loading = true);
+    try {
+      final res = await ApiService.approveUser(mobile, approved);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(res['message'] ?? 'Action successful!'),
+        backgroundColor: approved ? Colors.teal[800] : Colors.red[800],
+      ));
+      _loadDirectory();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update approval: $e')));
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _changeUserRole(String mobile, String role) async {
+    setState(() => _loading = true);
+    try {
+      final res = await ApiService.changeUserRole(mobile, role);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(res['message'] ?? 'Role updated successfully!'),
+        backgroundColor: Colors.teal[800],
+      ));
+      _loadDirectory();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update role: $e')));
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _updateCompany() async {
+    final name = _compNameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Company name cannot be empty.')));
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      final res = await ApiService.updateCompany(name, _compLogoController.text.trim());
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(res['message'] ?? 'Company profile updated successfully!'),
+        backgroundColor: Colors.teal[800],
+      ));
+      _loadDirectory();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update company: $e')));
+      setState(() => _loading = false);
+    }
+  }
+
   Future<void> _handleResetDatabase() async {
     if (!_confirmPurge) {
       setState(() {
@@ -117,9 +172,19 @@ class _admin_panel_screenState extends State<admin_panel_screen> {
 
   @override
   Widget build(BuildContext context) {
+    final companyId = widget.currentUser['companyId'] ?? 'KOPRAN';
+    final inviteLink = 'https://ais-pre-wuvc56taaangrxyoqi4wz4-386607728817.asia-east1.run.app/join?code=$companyId';
+
+    final pendingUsers = _users.where((u) => u['approved'] == false).toList();
+    final approvedUsers = _users.where((u) => u['approved'] != false).toList();
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('System Admin Console', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        title: const Text('Enterprise Console', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: const Color(0xFF1E293B),
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -128,6 +193,286 @@ class _admin_panel_screenState extends State<admin_panel_screen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // 1. Company Profile Configuration
+                  Card(
+                    color: Colors.white,
+                    elevation: 0.5,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.corporate_fare, color: Color(0xFF1E293B)),
+                              SizedBox(width: 8),
+                              Text('MANAGE ENTERPRISE TENANT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B))),
+                            ],
+                          ),
+                          const Divider(),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _compNameController,
+                            decoration: const InputDecoration(labelText: 'Corporate Organization Name', border: OutlineInputBorder()),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _compLogoController,
+                            decoration: const InputDecoration(labelText: 'Organization Logo Banner Icon URL', border: OutlineInputBorder()),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          const SizedBox(height: 12),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.check_circle_outline, size: 16),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1E293B),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            onPressed: _updateCompany,
+                            label: const Text('UPDATE COMPANY PROFILE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 2. Company Invitation Link System
+                  Card(
+                    color: const Color(0xFFEEF2F6),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: Color(0xFFCBD5E1))),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.share, color: Colors.indigo, size: 18),
+                              SizedBox(width: 8),
+                              Text('DYNAMIC CO-WORKER INVITE LINK', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.indigo, fontSize: 11)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Distribute this company-specific portal address to invite staff members. They will automatically bypass manual key entries and register aligned with your corporate profile.',
+                            style: TextStyle(fontSize: 10, color: Colors.blueGrey, height: 1.4),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.indigo.shade200),
+                            ),
+                            child: SelectableText(
+                              inviteLink,
+                              style: const TextStyle(fontSize: 10, fontFamily: 'monospace', fontWeight: FontWeight.bold, color: Colors.indigo),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.indigo[50],
+                              foregroundColor: Colors.indigo[900],
+                              elevation: 0,
+                            ),
+                            icon: const Icon(Icons.copy, size: 14),
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                content: Text('Invite portal link copied securely!'),
+                                backgroundColor: Colors.indigo,
+                              ));
+                            },
+                            label: const Text('COPY SECURE CO-WORKER INVITE LINK', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 3. Pending approvals list
+                  if (pendingUsers.isNotEmpty) ...[
+                    const Text('PENDING ADMINISTRATIVE APPROVALS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.amber)),
+                    const SizedBox(height: 8),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: pendingUsers.length,
+                      itemBuilder: (ctx, idx) {
+                        final u = pendingUsers[idx];
+                        return Card(
+                          color: Colors.amber[50],
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.amber.shade200)),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(u['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                      const SizedBox(height: 2),
+                                      Text('${u['role'].toString().toUpperCase()} | ${u['department']}', style: const TextStyle(fontSize: 10, color: Colors.black54)),
+                                      Text(u['mobile'] ?? '', style: const TextStyle(fontSize: 9, fontFamily: 'monospace')),
+                                    ],
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.check_circle, color: Colors.teal),
+                                      onPressed: () => _approveUser(u['mobile'], true),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.cancel, color: Colors.red),
+                                      onPressed: () => _approveUser(u['mobile'], false),
+                                    ),
+                                  ],
+                                )
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // 4. Member Register Form
+                  Card(
+                    color: Colors.white,
+                    elevation: 0.5,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text('MANUALLY REGISTER STAFF REMOTELY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                          const Divider(),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _mobileController,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(labelText: 'Mobile number (+91...)', border: OutlineInputBorder()),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _nameController,
+                            decoration: const InputDecoration(labelText: 'Full Name', border: OutlineInputBorder()),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(
+                            value: _selectedRole,
+                            items: _allRoles.entries.map((entry) {
+                              return DropdownMenuItem<String>(value: entry.key, child: Text(entry.value, style: const TextStyle(fontSize: 12)));
+                            }).toList(),
+                            onChanged: (v) => setState(() => _selectedRole = v!),
+                            decoration: const InputDecoration(labelText: 'Assigned Role Privilege'),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  value: _selectedDept,
+                                  items: _departments.map((d) => DropdownMenuItem(value: d, child: Text(d, style: const TextStyle(fontSize: 11)))).toList(),
+                                  onChanged: (v) => setState(() => _selectedDept = v!),
+                                  decoration: const InputDecoration(labelText: 'Dept'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  value: _selectedPlant,
+                                  items: _plants.map((p) => DropdownMenuItem(value: p, child: Text(p, style: const TextStyle(fontSize: 11)))).toList(),
+                                  onChanged: (v) => setState(() => _selectedPlant = v!),
+                                  decoration: const InputDecoration(labelText: 'Plant'),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E293B), foregroundColor: Colors.white),
+                            onPressed: _addNewMember,
+                            child: const Text('ADD MEMBER DATA'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 5. Directory listing
+                  const Text('ORGANIZATION TEAM DIRECTORY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  const SizedBox(height: 8),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: approvedUsers.length,
+                    itemBuilder: (ctx, idx) {
+                      final u = approvedUsers[idx];
+                      return Card(
+                        color: Colors.white,
+                        elevation: 0.1,
+                        margin: const EdgeInsets.only(bottom: 6),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: ExpansionTile(
+                            leading: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(color: Colors.indigo[50], shape: BoxShape.circle),
+                              child: const Icon(Icons.person, color: Colors.indigo),
+                            ),
+                            title: Text(u['name'] ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            subtitle: Text('${u['role'].toString().toUpperCase()} | ${u['department']}', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                            trailing: Text(u['mobile'] ?? '', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    const Text('Adjust Role Assignment Privilege', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                                    const SizedBox(height: 4),
+                                    DropdownButtonFormField<String>(
+                                      value: _allRoles.containsKey(u['role']) ? u['role'] : 'supervisor',
+                                      items: _allRoles.entries.map((entry) {
+                                        return DropdownMenuItem<String>(
+                                          value: entry.key,
+                                          child: Text(entry.value, style: const TextStyle(fontSize: 11)),
+                                        );
+                                      }).toList(),
+                                      onChanged: (newRole) {
+                                        if (newRole != null && newRole != u['role']) {
+                                          _changeUserRole(u['mobile'], newRole);
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+
                   // Safe Purging / Reset control widget
                   Card(
                     color: Colors.red[50],
@@ -173,95 +518,6 @@ class _admin_panel_screenState extends State<admin_panel_screen> {
                         ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Member Register Form
-                  Card(
-                    color: Colors.white,
-                    elevation: 0.5,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200 ?? Colors.grey.shade200)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const Text('REGISTER SYSTEM MEMBER ROSTER', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                          const Divider(),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: _mobileController,
-                            keyboardType: TextInputType.phone,
-                            decoration: const InputDecoration(labelText: 'Mobile number (+91...)', border: OutlineInputBorder()),
-                          ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: _nameController,
-                            decoration: const InputDecoration(labelText: 'Full Name', border: OutlineInputBorder()),
-                          ),
-                          const SizedBox(height: 12),
-                          DropdownButtonFormField<String>(
-                            value: _selectedRole,
-                            items: _allRoles.entries.map((entry) {
-                              return DropdownMenuItem<String>(value: entry.key, child: Text(entry.value));
-                            }).toList(),
-                            onChanged: (v) => setState(() => _selectedRole = v!),
-                            decoration: const InputDecoration(labelText: 'Assigned Role Privilege'),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: DropdownButtonFormField<String>(
-                                  value: _selectedDept,
-                                  items: _departments.map((d) => DropdownMenuItem(value: d, child: Text(d, style: const TextStyle(fontSize: 11)))).toList(),
-                                  onChanged: (v) => setState(() => _selectedDept = v!),
-                                  decoration: const InputDecoration(labelText: 'Dept'),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: DropdownButtonFormField<String>(
-                                  value: _selectedPlant,
-                                  items: _plants.map((p) => DropdownMenuItem(value: p, child: Text(p, style: const TextStyle(fontSize: 11)))).toList(),
-                                  onChanged: (v) => setState(() => _selectedPlant = v!),
-                                  decoration: const InputDecoration(labelText: 'Plant'),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E293B), foregroundColor: Colors.white),
-                            onPressed: _addNewMember,
-                            child: const Text('ADD MEMBER DATA'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Directory listing
-                  const Text('ORGANIZATION TEAM DIRECTORY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
-                  const SizedBox(height: 8),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _users.length,
-                    itemBuilder: (ctx, idx) {
-                      final u = _users[idx];
-                      return Card(
-                        color: Colors.white,
-                        elevation: 0.1,
-                        margin: const EdgeInsets.only(bottom: 6),
-                        child: ListTile(
-                          title: Text(u['name'] ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                          subtitle: Text('${u['role'].toString().toUpperCase()} | ${u['department']}', style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                          trailing: Text(u['mobile'] ?? '', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                        ),
-                      );
-                    },
                   ),
                 ],
               ),

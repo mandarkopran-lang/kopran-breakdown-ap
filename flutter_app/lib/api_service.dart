@@ -15,9 +15,18 @@ class ApiService {
   static Future<Map<String, String>> getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
     final envMode = prefs.getString('kopran_env_mode') ?? 'production';
+    final userJson = prefs.getString('shift_sync_user');
+    String mobile = '';
+    if (userJson != null) {
+      try {
+        final decoded = jsonDecode(userJson);
+        mobile = decoded['mobile'] ?? '';
+      } catch (_) {}
+    }
     return {
       'Content-Type': 'application/json',
       'X-Env-Mode': envMode,
+      if (mobile.isNotEmpty) 'x-user-mobile': mobile,
     };
   }
 
@@ -28,6 +37,9 @@ class ApiService {
     String? role,
     String? department,
     String? plant,
+    String? companyId,
+    String? companyName,
+    String? companyLogo,
   }) async {
     final url = await baseUrl;
     final headers = await getHeaders();
@@ -37,6 +49,9 @@ class ApiService {
       if (role != null) 'role': role,
       if (department != null) 'department': department,
       if (plant != null) 'plant': plant,
+      if (companyId != null) 'companyId': companyId,
+      if (companyName != null) 'companyName': companyName,
+      if (companyLogo != null) 'companyLogo': companyLogo,
     };
 
     final response = await http.post(
@@ -261,6 +276,54 @@ class ApiService {
       body: jsonEncode(body),
     );
 
+    return jsonDecode(response.body);
+  }
+
+  // Admin: Approve employee registration
+  static Future<Map<String, dynamic>> approveUser(String mobile, bool approved) async {
+    final url = await baseUrl;
+    final headers = await getHeaders();
+    final body = {
+      'mobile': mobile,
+      'approved': approved,
+    };
+    final response = await http.post(
+      Uri.parse('$url/api/admin/approve-user'),
+      headers: headers,
+      body: jsonEncode(body),
+    );
+    return jsonDecode(response.body);
+  }
+
+  // Admin: Upgrade/Toggle user role privileges
+  static Future<Map<String, dynamic>> changeUserRole(String mobile, String role) async {
+    final url = await baseUrl;
+    final headers = await getHeaders();
+    final body = {
+      'mobile': mobile,
+      'role': role,
+    };
+    final response = await http.post(
+      Uri.parse('$url/api/admin/change-role'),
+      headers: headers,
+      body: jsonEncode(body),
+    );
+    return jsonDecode(response.body);
+  }
+
+  // Admin: Update company profile name & logo URL
+  static Future<Map<String, dynamic>> updateCompany(String name, String logoUrl) async {
+    final url = await baseUrl;
+    final headers = await getHeaders();
+    final body = {
+      'name': name,
+      'logoUrl': logoUrl,
+    };
+    final response = await http.post(
+      Uri.parse('$url/api/admin/update-company'),
+      headers: headers,
+      body: jsonEncode(body),
+    );
     return jsonDecode(response.body);
   }
 
