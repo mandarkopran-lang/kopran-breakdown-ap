@@ -36,6 +36,9 @@ jobs:
           # Force create the android project structure with native Android support
           flutter create --project-name=kopran_breakdown_app --overwrite --org com.kopran.breakdown --platforms=android .
           
+          # Inject Internet access permission into high-level AndroidManifest.xml
+          sed -i 's/<application/    <uses-permission android:name="android.permission.INTERNET" \/>\n    <application/g' android/app/src/main/AndroidManifest.xml || true
+
           # Restore the original user code and pubspec
           rm -rf lib
           mv lib_backup lib
