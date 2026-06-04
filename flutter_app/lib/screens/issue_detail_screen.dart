@@ -164,7 +164,7 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(issue['plant'] ?? 'Plant 1', style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.blueGrey, fontSize: 10)),
+                              Text(issue['plant'] ?? 'Pen Plant', style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.blueGrey, fontSize: 10)),
                               Text('SLA: ${issue['slaMinutes']} mins', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.red)),
                             ],
                           ),

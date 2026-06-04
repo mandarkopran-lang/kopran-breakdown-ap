@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, UserRole, REGISTRATION_DEPARTMENTS } from '../types';
-import { Shield, Smartphone, Key, UserCheck, Factory } from 'lucide-react';
+import { Shield, Smartphone, Key, UserCheck, Factory, Building2, Link, ArrowRight, CheckCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import KopranLogo from './KopranLogo';
 
@@ -15,22 +15,44 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // Registration state if user is new
+  // Registration forms
   const [registerName, setRegisterName] = useState('');
   const [registerRole, setRegisterRole] = useState<UserRole>('supervisor');
   const [registerDept, setRegisterDept] = useState('Production');
-  const [registerPlant, setRegisterPlant] = useState<'Plant 1' | 'Plant 2' | 'Both'>('Plant 1');
+  const [registerPlant, setRegisterPlant] = useState<'Pen Plant' | 'Non-Pen Plant' | 'Both'>('Pen Plant');
+  const [manualCompanyId, setManualCompanyId] = useState('');
 
-  // Invitation check state
-  const [invitedUser, setInvitedUser] = useState<{ mobile: string; name: string; role: string } | null>(null);
+  // Auto-parsed joining company states
+  const [joiningCompany, setJoiningCompany] = useState<{ id: string; name: string; logoUrl?: string } | null>(null);
 
-  React.useEffect(() => {
+  // Parse invite links and query params
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const m = params.get('inviteMobile');
     const n = params.get('inviteName');
     const r = params.get('inviteRole');
     const d = params.get('inviteDept');
     const p = params.get('invitePlant');
+    const ucid = params.get('companyId');
+
+    // Handle parsed company invite code
+    if (ucid) {
+      fetch(`/api/companies/${ucid.toUpperCase().trim()}`)
+        .then(res => {
+          if (res.ok) return res.json();
+          throw new Error('Not found');
+        })
+        .then(data => {
+          setJoiningCompany(data);
+          setManualCompanyId(data.id);
+        })
+        .catch(() => {
+          // Fallback if not found
+          setJoiningCompany({ id: ucid.toUpperCase().trim(), name: `Company ID: ${ucid.toUpperCase().trim()}` });
+          setManualCompanyId(ucid.toUpperCase().trim());
+        });
+    }
+
     if (m) {
       const cleanMobile = m.trim();
       setMobile(cleanMobile);
@@ -40,29 +62,29 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       }
       if (d) setRegisterDept(d.trim());
       if (p) {
-        const parsedPlant = p === 'Plant 1' || p === 'Plant 2' || p === 'Both' ? p : 'Plant 1';
+        const parsedPlant = p === 'Pen Plant' || p === 'Non-Pen Plant' || p === 'Both' || p === 'Plant 1' || p === 'Plant 2'
+          ? (p === 'Plant 1' ? 'Pen Plant' : p === 'Plant 2' ? 'Non-Pen Plant' : p as any)
+          : 'Pen Plant';
         setRegisterPlant(parsedPlant);
       }
-      if (n && r) {
-        setInvitedUser({ mobile: cleanMobile, name: n.trim(), role: r.trim() });
-      }
-      // Automatically request simulation OTP check
+      // Trigger request OTP automatically
       handleStartAuth(cleanMobile);
     }
   }, []);
 
-  // Preconfigured profiles list for testing / evaluation of 7 roles
+  // Preconfigured profiles list for testing / evaluation
   const PRESET_USERS = [
-    { name: 'Rajesh Kumar', mobile: '+91 98765 43210', role: 'supervisor' as const, dept: 'Production', plant: 'Plant 1' as const, desc: 'Supervisor: Can raise breakdowns, confirm repairs' },
-    { name: 'Anil Sharma', mobile: '+91 87654 32109', role: 'engineering_officer' as const, dept: 'Engineering', plant: 'Plant 1' as const, desc: 'Engineering Officer: Can self-assign and resolve' },
-    { name: 'Sunil Verma', mobile: '+91 99999 88888', role: 'engineering_head' as const, dept: 'Engineering', plant: 'Both' as const, desc: 'Engineering Head: Can assign/reassign, view graphics/analysis' },
-    { name: 'Vikram Singh', mobile: '+91 76543 21098', role: 'admin' as const, dept: 'Admin', plant: 'Both' as const, desc: 'Admin: Full system parameters/directories control' },
-    { name: 'Karan Johar', mobile: '+91 88888 77777', role: 'engineering_manager' as const, dept: 'Engineering', plant: 'Both' as const, desc: 'Engineering Manager: Can assign/reassign, view graphics, reports' },
-    { name: 'Meeta Patel', mobile: '+91 77777 66666', role: 'plant_manager' as const, dept: 'Production', plant: 'Plant 1' as const, desc: 'Plant Manager: Write comments & concerns' },
-    { name: 'Hitesh Shah', mobile: '+91 66666 55555', role: 'qa_manager' as const, dept: 'QA', plant: 'Both' as const, desc: 'QA Manager: Manage quality issues, write concerns' }
+    { name: 'Rajesh Kumar', mobile: '+91 98765 43210', role: 'supervisor' as const, dept: 'Production', plant: 'Pen Plant' as const, desc: 'Supervisor: Raise breakdown tickets, close tasks' },
+    { name: 'Anil Sharma', mobile: '+91 87654 32109', role: 'engineering_officer' as const, dept: 'Engineering', plant: 'Pen Plant' as const, desc: 'Engineer: Receive assign alerts, update progress' },
+    { name: 'Vikram Singh', mobile: '+91 76543 21098', role: 'admin' as const, dept: 'Admin', plant: 'Both' as const, desc: 'Manager: Roster directory, CSV reports, multi-tenant setup' },
+    { name: 'Sunil Verma', mobile: '+91 99999 88888', role: 'engineering_head' as const, dept: 'Engineering', plant: 'Both' as const, desc: 'Head: Plant performance metrics, diagnostics cockpit' }
   ];
 
   const handleStartAuth = async (number: string) => {
+    if (!number.trim()) {
+      setError('A valid mobile number is required.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -74,7 +96,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       const data = await res.json();
       
       if (!res.ok) {
-        throw new Error(data.error || 'Server connection failure');
+        throw new Error(data.error || 'Connection failed.');
       }
 
       if (data.exists === false) {
@@ -82,7 +104,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         setStep('register');
       } else {
         setMobile(number);
-        setOtp(data.otp || '123456'); // pre-set default
+        setOtp(data.otp || '123456'); // Simulation fallback code
         setStep('otp');
       }
     } catch (err: any) {
@@ -94,6 +116,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!otp.trim()) return;
     setLoading(true);
     setError('');
     try {
@@ -104,7 +127,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Incorrect OTP code');
+        throw new Error(data.error || 'Verification failed. Incorrect OTP.');
       }
       onLoginSuccess(data.user);
     } catch (err: any) {
@@ -117,32 +140,42 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!registerName.trim()) {
-      setError('Please enter your full name');
+      setError('Please input your full name for credentials.');
       return;
     }
+
+    const companyTarget = registerRole === 'admin' 
+      ? '' 
+      : (manualCompanyId.trim() || joiningCompany?.id || 'KOPRAN');
+
+    if (registerRole !== 'admin' && !companyTarget) {
+      setError('Company invite code/ID is required for general staff directories.');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
-      // Register new user profile
-      const resReg = await fetch('/api/users', {
+      // Direct registration & OTP dispatch combined in backend
+      const res = await fetch('/api/auth/request-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mobile,
           name: registerName,
           role: registerRole,
-          department: registerDept,
-          plant: registerPlant
+          department: registerRole !== 'admin' ? registerDept : 'Management',
+          plant: registerPlant,
+          companyId: companyTarget.toUpperCase()
         })
       });
-      
-      const regData = await resReg.json();
-      if (!resReg.ok) {
-        throw new Error(regData.error || 'Unable to register profile');
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Registration failed.');
       }
 
-      // Request OTP
-      await handleStartAuth(mobile);
+      setOtp(data.otp || '123456');
+      setStep('otp');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -151,146 +184,189 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   };
 
   return (
-    <div id="login-container" className="min-h-screen bg-slate-100 grid-lines flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans transition-colors duration-150 relative overflow-hidden">
-      {/* Visual background decoration */}
-      <div className="absolute top-0 left-0 right-0 h-1.5 bg-indigo-600" />
-
-      <div className="sm:mx-auto sm:w-full sm:max-w-md relative flex flex-col items-center">
-        <div className="flex flex-col items-center justify-center text-center gap-2">
-          <KopranLogo size={60} />
-          <div className="mt-2 text-center">
-            <h1 className="text-lg font-extrabold text-indigo-700 leading-none uppercase tracking-wider">
-              Breakdown Monitor
-            </h1>
-            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">
-              Real-time Plant Operations Portal
-            </p>
+    <div id="login-screen-redesign" className="w-full max-w-lg mx-auto p-4 sm:p-6 font-sans select-none">
+      
+      {/* Upper Brand Badge */}
+      <div className="flex flex-col items-center justify-center text-center mb-8">
+        
+        {/* Dynamic Logo View based on Shared Tenant */}
+        <div className="relative">
+          {joiningCompany?.logoUrl ? (
+            <img 
+              src={joiningCompany.logoUrl} 
+              alt={joiningCompany.name}
+              className="h-16 w-16 object-contain rounded-xl border-2 border-amber-500 shadow-md p-1 bg-white"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                // If it crashes, fallback to KopranLogo icon
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-700 shadow-sm">
+              <Factory className="h-10 w-10 text-amber-600" />
+            </div>
+          )}
+          
+          <div className="absolute -bottom-1.5 -right-1.5 bg-slate-900 border border-slate-750 text-white rounded-full p-1 text-[8px] font-mono leading-none font-bold uppercase tracking-widest px-2">
+            Multi-Tenant v2.4
           </div>
         </div>
-        <h2 className="mt-6 text-center text-xl font-extrabold tracking-tight text-slate-900 uppercase">
-          Digital Operator Portal
-        </h2>
-        <p className="mt-2 text-center text-xs text-slate-500 font-medium px-4">
-          Direct manufacturing breakdown reporting, automatic engineered routing, and live logs.
-        </p>
+
+        <div className="mt-4">
+          <h2 className="text-xl font-black text-slate-900 leading-tight tracking-tight uppercase flex items-center justify-center gap-1.5">
+            Break Down Monitor
+          </h2>
+          {joiningCompany ? (
+            <div className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
+              <Building2 className="h-3.5 w-3.5" />
+              Corporate Portal: {joiningCompany.name}
+            </div>
+          ) : (
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+              Corporate Breakdown Monitoring System
+            </p>
+          )}
+        </div>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-lg">
-        <div className="bg-white py-8 px-4 rounded-xl shadow-md border border-slate-200 sm:px-10 relative">
+      {/* Main card box with high-tech Teal/Charcoal styling details */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden relative">
+        <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-emerald-500 to-indigo-600" />
+        
+        <div className="p-6 sm:p-10 space-y-6">
           
           {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3.5 text-xs text-red-700 font-semibold flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-650 bg-red-600 shrink-0" />
-              <span>{error}</span>
+            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 font-semibold flex items-start gap-2.5 leading-relaxed">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-600 mt-1.5 shrink-0" />
+              <div className="flex-1">
+                <span className="font-extrabold block uppercase tracking-wide text-[10px] text-rose-950 mb-0.5">Authorization Error</span>
+                {error}
+              </div>
             </div>
           )}
 
+          {/* STEP 1: Enter Mobile */}
           {step === 'mobile' && (
-            <div>
+            <div className="space-y-6">
+              
+              <div className="text-left">
+                <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Authentication Required</h3>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">
+                  Connect using your physical registered mobile number to confirm identity and route notifications.
+                </p>
+              </div>
+
               <form onSubmit={(e) => { e.preventDefault(); handleStartAuth(mobile); }} className="space-y-4">
                 <div>
-                  <label htmlFor="mobile-input" className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                    Enter Mobile Number
+                  <label htmlFor="mobile" className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                    Mobile Identifier
                   </label>
-                  <div className="mt-1.5 relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="mt-1.5 relative rounded-xl shadow-xs">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                       <Smartphone className="h-4 w-4 text-slate-400" />
                     </div>
                     <input
-                      id="mobile-input"
+                      id="mobile"
                       type="tel"
                       required
                       placeholder="+91 98765 43210"
                       value={mobile}
                       onChange={(e) => setMobile(e.target.value)}
-                      className="block w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 sm:text-xs font-medium"
+                      className="block w-full pl-10 pr-4 py-3 border border-slate-250 border-slate-200 rounded-xl bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 text-xs font-bold font-mono text-slate-800 tracking-wide"
                     />
                   </div>
-                  <p className="mt-1 text-[10px] text-slate-400">
-                    Use full international format including country prefix code.
+                  <p className="mt-1.5 text-[9px] text-slate-400 font-medium leading-normal">
+                    Format: +91 [10 Digits] (Include standard country prefix identifier)
                   </p>
                 </div>
 
                 <button
-                  id="request-otp-button"
                   type="submit"
                   disabled={loading || !mobile}
-                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg text-xs font-bold tracking-wider uppercase text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 cursor-pointer shadow-sm"
+                  className="w-full py-3.5 bg-amber-600 hover:bg-amber-700 text-white font-extrabold uppercase tracking-widest text-xs rounded-xl transition duration-150 shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  {loading ? 'Requesting OTP...' : 'Proceed with OTP Secure Signin'}
+                  {loading ? 'Routing Dispatch...' : 'Generate OTP Code'}
+                  <ArrowRight className="h-4 w-4" />
                 </button>
               </form>
 
-              {/* Preset Profile Grid */}
-              <div className="mt-8">
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                    <div className="w-full border-t border-slate-200" />
-                  </div>
-                  <div className="relative flex justify-center text-[10px] uppercase tracking-wider">
-                    <span className="bg-white px-3 text-slate-400 font-bold">
-                      Or Quick-Test as Mock Role
+              {/* Presets Grid - conditional on testing mode only */}
+              {((localStorage.getItem('kopran_env_mode') || 'production') === 'testing') && (
+                <div className="border-t border-slate-200 pt-6 animate-fade-in">
+                  <div className="relative flex justify-center text-[9px] uppercase tracking-widest font-extrabold mb-4 select-none">
+                    <span className="bg-white px-3 text-slate-400">
+                      Or Evaluate as Mock Profile (Testing Mode Only)
                     </span>
                   </div>
-                </div>
 
-                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {PRESET_USERS.map((user) => (
-                    <button
-                      id={`preset-user-${user.role}`}
-                      key={user.mobile}
-                      onClick={() => {
-                        setMobile(user.mobile);
-                        handleStartAuth(user.mobile);
-                      }}
-                      className="flex flex-col text-left p-3 bg-slate-50 hover:bg-indigo-50/50 rounded-lg border border-slate-200 hover:border-indigo-505 hover:border-indigo-500 transition-all duration-150 cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span className="font-bold text-xs text-slate-800">{user.name}</span>
-                        <span className={`text-[8px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded ${
-                          user.role === 'admin' ? 'bg-indigo-150 text-indigo-750 bg-indigo-100 text-indigo-700 border border-indigo-200' :
-                          user.role === 'engineering_head' || user.role === 'engineering_manager' ? 'bg-indigo-50 border border-indigo-200 text-indigo-800 font-extrabold' :
-                          user.role === 'engineering_officer' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' :
-                          user.role === 'plant_manager' || user.role === 'qa_manager' ? 'bg-amber-50 border border-amber-200 text-amber-800' :
-                          'bg-slate-100 border border-slate-200 text-slate-800'
-                        }`}>
-                          {user.role.replace('_', ' ')}
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-slate-500 font-mono mt-0.5">{user.mobile}</span>
-                      <span className="text-[10px] text-slate-400 mt-1 italic. block">
-                        {user.desc}
-                      </span>
-                    </button>
-                  ))}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {PRESET_USERS.map((user) => (
+                      <button
+                        key={user.mobile}
+                        onClick={() => {
+                          setMobile(user.mobile);
+                          handleStartAuth(user.mobile);
+                        }}
+                        className="group flex flex-col text-left p-3 bg-slate-50 hover:bg-amber-50/25 rounded-xl border border-slate-200 hover:border-amber-500 transition-all duration-150 cursor-pointer"
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span className="font-extrabold text-[11px] text-slate-800 group-hover:text-amber-900">{user.name}</span>
+                          <span className="text-[8px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-slate-200/50 text-slate-600">
+                            {user.role.replace('_', ' ')}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-500 font-mono mt-0.5">{user.mobile}</span>
+                        <p className="text-[9px] text-slate-400 mt-1 lines-clamp-1 italic font-medium leading-tight">
+                          {user.desc}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
             </div>
           )}
 
+          {/* STEP 2: Verify OTP */}
           {step === 'otp' && (
-            <form onSubmit={handleVerifyOtp} className="space-y-4">
+            <form onSubmit={handleVerifyOtp} className="space-y-6">
+              <div className="text-left">
+                <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">SMS Authentication</h3>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">
+                  A transient authentication code has been sent over secure fallback protocols to mobile: <span className="font-bold text-slate-800 font-mono">{mobile}</span>
+                </p>
+              </div>
+
               <div>
-                <label htmlFor="otp-input" className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                  Verify Automated Login OTP
+                <label className="block text-[10px] font-extrabold text-slate-405 text-slate-400 uppercase tracking-widest">
+                  Authentication Code
                 </label>
-                <div className="mt-1.5 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="mt-1.5 relative rounded-xl shadow-xs">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <Key className="h-4 w-4 text-slate-400" />
                   </div>
                   <input
-                    id="otp-input"
                     type="text"
                     required
                     maxLength={6}
                     placeholder="Enter 6-digit OTP"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value)}
-                    className="block w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 placeholder-slate-450 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-center tracking-widest text-base font-bold font-mono"
+                    className="block w-full pl-10 pr-4 py-3 border border-slate-250 border-slate-200 rounded-xl bg-slate-50 text-center tracking-widest text-base font-bold font-mono text-slate-850"
                   />
                 </div>
-                <div className="mt-2.5 bg-amber-50/50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-                  ⚡ <strong>Evaluation Simulation:</strong> Use the auto-generated test code <strong className="text-slate-900 text-xs bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 font-mono ml-1">123456</strong> to sign in securely.
+
+                <div className="mt-3.5 p-3.5 bg-emerald-50 border border-emerald-150 rounded-xl text-[11px] text-emerald-850 font-semibold space-y-2">
+                  <p className="flex items-start gap-1.5 leading-snug">
+                    <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span><strong>Evaluation Bypass Mode Active:</strong> Use the pre-computed credential <strong className="bg-emerald-100 text-emerald-950 px-1.5 py-0.2 rounded font-mono font-bold">123456</strong> to connect.</span>
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-semibold border-t border-emerald-200/55 pt-1.5 flex items-start gap-1.5 leading-snug">
+                    <span>💬</span>
+                    <span><strong>WhatsApp delivery:</strong> If standard carrier SMS network signals are unavailable, the secure OTP dispatch is automatically routed via WhatsApp fallback instant messaging.</span>
+                  </p>
                 </div>
               </div>
 
@@ -298,94 +374,110 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 <button
                   type="button"
                   onClick={() => setStep('mobile')}
-                  className="flex-1 py-2.5 px-4 border border-slate-200 hover:border-slate-350 rounded-lg text-xs font-semibold text-slate-600 bg-transparent hover:bg-slate-50 transition-all duration-150 cursor-pointer"
+                  className="flex-1 py-3 px-4 border border-slate-200 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-600 hover:bg-slate-50 bg-white transition duration-150 cursor-pointer text-center"
                 >
-                  Back
+                  Cancel
                 </button>
                 <button
-                  id="verify-otp-button"
                   type="submit"
                   disabled={loading || otp.length < 6}
-                  className="flex-1 py-2.5 px-4 border border-transparent rounded-lg text-xs font-bold uppercase tracking-wider text-white bg-indigo-600 hover:bg-indigo-700 transition-all duration-150 cursor-pointer"
+                  className="flex-1 py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white font-extrabold uppercase tracking-wider text-xs rounded-xl shadow-md transition duration-150 cursor-pointer text-center"
                 >
-                  {loading ? 'Verifying...' : 'Verify OTP'}
+                  {loading ? 'Verifying...' : 'Access Console'}
                 </button>
               </div>
             </form>
           )}
 
+          {/* STEP 3: Register New User */}
           {step === 'register' && (
             <form onSubmit={handleRegister} className="space-y-4">
-              <div className="bg-indigo-50 border border-indigo-150 rounded-lg p-3 text-xs text-indigo-700 font-medium">
-                👤 No account with mobile <strong>{mobile}</strong> exists. Complete quick registration to proceed.
+              
+              <div className="text-left bg-teal-50 border border-teal-150 rounded-xl p-3.5 text-xs text-teal-850 font-medium">
+                🛡️ Complete corporate directory cataloging for number: <strong className="font-bold font-mono">{mobile}</strong>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">Full Name</label>
+                <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Full Name</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Rahul Sharma"
+                  placeholder="e.g. Anand Mahindra"
                   value={registerName}
                   onChange={(e) => setRegisterName(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-xs"
+                  className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-705 text-slate-700 uppercase tracking-wide mt-3 flex items-center justify-between">
-                  <span>System Role</span>
-                  {invitedUser ? (
-                    <span className="text-[9px] text-emerald-650 text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.2 rounded uppercase font-extrabold">Allotted by Admin</span>
-                  ) : (
-                    <span className="text-[9px] text-amber-650 text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.2 rounded uppercase font-extrabold">Standard Class</span>
-                  )}
-                </label>
-                
-                {invitedUser ? (
-                  <div className="mt-1 block w-full px-3 py-2 border border-emerald-200 rounded-lg bg-emerald-50/50 text-slate-800 text-xs font-bold uppercase tracking-wide">
-                    {registerRole.replace('_', ' ')}
-                  </div>
-                ) : (
-                  <>
-                    <select
-                      value={registerRole}
-                      onChange={(e) => setRegisterRole(e.target.value as UserRole)}
-                      className="mt-1 block w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-xs font-semibold"
-                    >
-                      <option value="supervisor">Supervisor (Raise issues & confirm resolution)</option>
-                      <option value="engineering_officer">Engineering Officer (Respond, self-assign, repair)</option>
-                    </select>
-                    <p className="mt-1.5 text-[9px] text-slate-450 leading-relaxed text-slate-500 bg-slate-50 border border-slate-100 rounded p-2">
-                      🔒 <strong>Role Restrictions Active:</strong> High-level roles (<em>Admin, Engineering Head, Engineering Manager, Plant Manager, QA Manager</em>) cannot be self-selected to prevent unauthorized access. If you need any of these, register as a Supervisor first and ask your System Admin to upgrade your role via the Team Directory.
-                    </p>
-                  </>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mt-3">Primary Dept Segment</label>
+                <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">System Role</label>
                 <select
-                  value={registerDept}
-                  onChange={(e) => setRegisterDept(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-xs"
+                  value={registerRole}
+                  onChange={(e) => setRegisterRole(e.target.value as UserRole)}
+                  className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-bold text-slate-800"
                 >
-                  {REGISTRATION_DEPARTMENTS.map(dept => (
-                    <option key={dept} value={dept}>{dept}</option>
-                  ))}
+                  <option value="supervisor">Supervisor (Raise breakdowns & audit closure)</option>
+                  <option value="engineering_officer">Engineering Officer (Accept assignments & resolve)</option>
+                  <option value="admin">Admin (Company Owner - Generate Invite Link)</option>
                 </select>
+                <p className="mt-1 text-[9px] text-slate-400 font-medium leading-relaxed italic">
+                  * Note: Admin profiles can construct isolated corporate configurations with customized dashboards and logos.
+                </p>
               </div>
 
+              {registerRole !== 'admin' && (
+                <>
+                  <div>
+                    <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Department / Work Center</label>
+                    <select
+                      value={registerDept}
+                      onChange={(e) => setRegisterDept(e.target.value)}
+                      className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-bold text-slate-800"
+                    >
+                      {REGISTRATION_DEPARTMENTS.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">
+                      {joiningCompany ? 'Allotted Corporate Tenant' : 'Company Invite Code'}
+                    </label>
+                    {joiningCompany ? (
+                      <div className="bg-slate-50 py-2.5 px-4 rounded-xl border border-slate-200 text-xs text-slate-700 font-bold flex items-center justify-between">
+                        <span>🏢 {joiningCompany.name}</span>
+                        <span className="font-mono text-[10px] bg-teal-50 text-teal-800 border-teal-200 px-1.5 py-0.2 rounded uppercase">{joiningCompany.id}</span>
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        required
+                        placeholder="Type Code (e.g., KOPRAN)"
+                        value={manualCompanyId}
+                        onChange={(e) => setManualCompanyId(e.target.value)}
+                        className="block w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-xs font-extrabold font-mono uppercase text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500 rounded-xl placeholder-slate-400"
+                      />
+                    )}
+                    {!joiningCompany && (
+                      <p className="mt-1 text-[9px] text-slate-400 font-medium leading-tight">
+                        Enter <strong className="text-slate-600 font-mono uppercase">KOPRAN</strong> or the specific Admin company invite code provided in your onboarding materials.
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mt-3">Assigned Plant Location</label>
+                <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Plant Operations Allotment</label>
                 <select
                   value={registerPlant}
                   onChange={(e) => setRegisterPlant(e.target.value as any)}
-                  className="mt-1 block w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-xs"
+                  className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-bold text-slate-800"
                 >
-                  <option value="Plant 1">Plant 1 (Primary)</option>
-                  <option value="Plant 2">Plant 2 (Auxiliary)</option>
-                  <option value="Both">Both (Shared System Access)</option>
+                  <option value="Pen Plant">Pen Plant Operations Only</option>
+                  <option value="Non-Pen Plant">Non-Pen Plant Operations Only</option>
+                  <option value="Both">Both (Shared Cross-Plant Access)</option>
                 </select>
               </div>
 
@@ -393,14 +485,14 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 <button
                   type="button"
                   onClick={() => setStep('mobile')}
-                  className="flex-1 py-2.5 px-4 border border-slate-200 rounded-lg text-xs font-semibold text-slate-600 bg-transparent hover:bg-slate-50 transition-all duration-150 cursor-pointer"
+                  className="flex-1 py-3 px-4 border border-slate-200 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-600 bg-white hover:bg-slate-50 transition duration-150 cursor-pointer text-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 py-2.5 px-4 border border-transparent rounded-lg text-xs font-bold uppercase tracking-wider text-white bg-indigo-600 hover:bg-indigo-700 transition-all duration-150 cursor-pointer"
+                  className="flex-1 py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white font-extrabold uppercase tracking-widest text-xs rounded-xl shadow-md transition duration-150 cursor-pointer text-center"
                 >
                   {loading ? 'Submitting...' : 'Register Profile'}
                 </button>
@@ -410,6 +502,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
         </div>
       </div>
+      
     </div>
   );
 }

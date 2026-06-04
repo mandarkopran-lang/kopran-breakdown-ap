@@ -9,7 +9,19 @@ class ApiService {
 
   static Future<String> get baseUrl async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('custom_backend_url') ?? baseProductionUrl;
+    final customUrl = prefs.getString('custom_backend_url');
+    if (customUrl != null && customUrl.isNotEmpty) {
+      return customUrl;
+    }
+
+    try {
+      final uri = Uri.base;
+      if (uri.scheme.startsWith('http')) {
+        return uri.origin;
+      }
+    } catch (_) {}
+
+    return baseProductionUrl;
   }
 
   static Future<Map<String, String>> getHeaders() async {
@@ -337,5 +349,36 @@ class ApiService {
     );
 
     return jsonDecode(response.body);
+  }
+
+  // Admin one-time setup: Register new corporate company
+  static Future<Map<String, dynamic>> registerNewCompany(String name, String logoUrl) async {
+    final url = await baseUrl;
+    final headers = await getHeaders();
+    final body = {
+      'name': name,
+      'logoUrl': logoUrl,
+    };
+    final response = await http.post(
+      Uri.parse('$url/api/admin/register-company'),
+      headers: headers,
+      body: jsonEncode(body),
+    );
+    return jsonDecode(response.body);
+  }
+
+  // Admin utility: Fetch audit action tracking logs
+  static Future<List<dynamic>> fetchAuditLogs() async {
+    final url = await baseUrl;
+    final headers = await getHeaders();
+    final response = await http.get(
+      Uri.parse('$url/api/admin/audit-logs'),
+      headers: headers,
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load audit logs.');
+    }
   }
 }

@@ -21,6 +21,19 @@ try {
       const modifiedInit = { ...(init || {}) };
       const headers = new Headers(modifiedInit.headers || {});
       headers.set('X-Env-Mode', envMode);
+
+      const savedUser = localStorage.getItem('shift_sync_user');
+      if (savedUser) {
+        try {
+          const userObj = JSON.parse(savedUser);
+          if (userObj && userObj.mobile) {
+            headers.set('X-User-Mobile', userObj.mobile);
+          }
+        } catch {
+          // ignore parsing error
+        }
+      }
+
       modifiedInit.headers = headers;
       return originalFetch(input, modifiedInit);
     },
@@ -38,6 +51,19 @@ try {
         const modifiedInit = { ...(init || {}) };
         const headers = new Headers(modifiedInit.headers || {});
         headers.set('X-Env-Mode', envMode);
+
+        const savedUser = localStorage.getItem('shift_sync_user');
+        if (savedUser) {
+          try {
+            const userObj = JSON.parse(savedUser);
+            if (userObj && userObj.mobile) {
+              headers.set('X-User-Mobile', userObj.mobile);
+            }
+          } catch {
+            // ignore parsing error
+          }
+        }
+
         modifiedInit.headers = headers;
         return originalFetch(input, modifiedInit);
       },

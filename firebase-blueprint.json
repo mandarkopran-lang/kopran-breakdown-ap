@@ -178,9 +178,59 @@
         }
       },
       "required": ["id", "type", "frequency", "time"]
+    },
+    "Company": {
+      "title": "Company",
+      "description": "Registered tenant company profiles",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "logoUrl": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "name"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Roster modifications, OTP deliveries, system adjustments activity trail",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "actor": {
+          "type": "string"
+        },
+        "details": {
+          "type": "string"
+        },
+        "companyId": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "timestamp", "type", "actor", "details"]
     }
   },
   "firestore": {
+    "companies": {
+      "schema": "Company",
+      "description": "Enterprise tenant database"
+    },
     "users": {
       "schema": "User",
       "description": "Collection of employee profiles"
@@ -196,6 +246,10 @@
     "scheduledReports": {
       "schema": "ScheduledReport",
       "description": "Cron configurations"
+    },
+    "auditLogs": {
+      "schema": "AuditLog",
+      "description": "Security and activity trail logs"
     }
   }
 }

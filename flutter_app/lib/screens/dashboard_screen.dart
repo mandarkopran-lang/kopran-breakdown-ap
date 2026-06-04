@@ -62,9 +62,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _openRaiseBreakdownDialog() {
-    String selectedPlant = 'Plant 1';
+    String selectedPlant = 'Pen Plant';
     String selectedDept = 'Production';
-    String selectedArea = 'Manufacturing (Plant 1)';
+    String selectedArea = 'Manufacturing (Pen Plant)';
     String selectedMachine = 'PLC Control Station 01';
     final descController = TextEditingController();
     int slaMinutes = 120;
@@ -132,8 +132,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     DropdownButtonFormField<String>(
                       value: selectedPlant,
                       items: const [
-                        DropdownMenuItem(value: 'Plant 1', child: Text('Plant 1 (Main Manufacturing)')),
-                        DropdownMenuItem(value: 'Plant 2', child: Text('Plant 2 (Auxiliary Utility)')),
+                        DropdownMenuItem(value: 'Pen Plant', child: Text('Pen Plant (Main Manufacturing)')),
+                        DropdownMenuItem(value: 'Non-Pen Plant', child: Text('Non-Pen Plant (Auxiliary Utility)')),
                       ],
                       onChanged: (val) {
                         setModalState(() {
@@ -404,9 +404,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 value: _plantFilter,
                                 style: const TextStyle(fontSize: 11, color: Colors.black, fontWeight: FontWeight.bold),
                                 items: const [
-                                  DropdownMenuItem(value: '', child: Text('All Plants (1 & 2)')),
-                                  DropdownMenuItem(value: 'Plant 1', child: Text('Plant 1')),
-                                  DropdownMenuItem(value: 'Plant 2', child: Text('Plant 2')),
+                                  DropdownMenuItem(value: '', child: Text('All Plants (Pen & Non-Pen)')),
+                                  DropdownMenuItem(value: 'Pen Plant', child: Text('Pen Plant')),
+                                  DropdownMenuItem(value: 'Non-Pen Plant', child: Text('Non-Pen Plant')),
                                 ],
                                 onChanged: (v) {
                                   setState(() {

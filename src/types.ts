@@ -13,7 +13,7 @@ export const USER_ROLES_INFO: { [key in UserRole]: { label: string; desc: string
   admin: { label: 'Admin', desc: 'Full administration, system parameters, downloads' },
   engineering_head: { label: 'Engineering Head', desc: 'Assign/reassign breakdowns, view graphical metrics, reports' },
   engineering_manager: { label: 'Engineering Manager', desc: 'Assign/reassign breakdowns, view graphical metrics, reports, downloads' },
-  engineering_officer: { label: 'Engineering Officer', desc: 'Self-assign jobs, report resolutions' },
+  engineering_officer: { label: 'Engineering Supervisor / Officer', desc: 'Self-assign jobs, report resolutions' },
   plant_manager: { label: 'Plant Manager', desc: 'Raise breakdowns, write operational comments/concerns, downloads' },
   qa_manager: { label: 'QA Manager', desc: 'Raise breakdowns, write quality comments/concerns, downloads' },
   supervisor: { label: 'Supervisor', desc: 'Raise breakdowns, confirm resolutions' }
@@ -24,8 +24,9 @@ export interface User {
   name: string;
   role: UserRole;
   department?: string;
-  plant?: 'Plant 1' | 'Plant 2' | 'Both';
+  plant?: string;
   otp?: string;
+  companyId?: string;
 }
 
 export type IssueStatus = 'open' | 'assigned' | 'in_progress' | 'resolved' | 'closed';
@@ -149,13 +150,13 @@ const AREA_MACHINES: { [area: string]: string[] } = {
 };
 
 function getMachinesForArea(areaName: string): string[] {
-  const baseName = areaName.replace(/\s*\(Plant\s*\d+\)$/i, '');
+  const baseName = areaName.replace(/\s*\((Plant\s*\d+|Pen Plant|Non-Pen Plant)\)$/i, '');
   return AREA_MACHINES[baseName] || ['General Equipment Unit 01', 'Generic Utility Unit 02'];
 }
 
 const buildHierarchy = (): PlantHierarchy => {
   const hierarchy: PlantHierarchy = {};
-  const plants = ['Plant 1', 'Plant 2'];
+  const plants = ['Pen Plant', 'Non-Pen Plant'];
   const depts = [
     'Production',
     'Engineering',

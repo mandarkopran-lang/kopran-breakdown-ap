@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/company_setup_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -183,10 +184,24 @@ class _AuthSessionWrapperState extends State<AuthSessionWrapper> {
                         });
                       },
                     )
-                  : DashboardScreen(
-                      currentUser: _userObj!,
-                      onSignOut: _signOut,
-                    ),
+                  : (_userObj!['role'] == 'admin' &&
+                          (_userObj!['companyId'] == null ||
+                              _userObj!['companyId']
+                                  .toString()
+                                  .trim()
+                                  .isEmpty))
+                      ? CompanySetupScreen(
+                          currentUser: _userObj!,
+                          onSetupComplete: (updatedUser) {
+                            setState(() {
+                              _userObj = updatedUser;
+                            });
+                          },
+                        )
+                      : DashboardScreen(
+                          currentUser: _userObj!,
+                          onSignOut: _signOut,
+                        ),
             ),
           ],
         ),

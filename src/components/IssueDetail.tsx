@@ -27,10 +27,10 @@ export default function IssueDetail({ issue, currentUser, onRefresh, onClose }: 
       .then(r => r.json())
       .then((data: User[]) => {
         const engs = data.filter(u => {
-          const isEngOrAdmin = u.role === 'engineering_officer' || u.role === 'admin';
+          const isEngOrAdmin = ['engineering_officer', 'engineering_manager', 'engineering_head', 'admin'].includes(u.role);
           if (!isEngOrAdmin) return false;
           // Filter matching: engineer's plant must be 'Both' or match the issue's plant
-          const engPlant = u.plant || 'Plant 1';
+          const engPlant = u.plant || 'Pen Plant';
           return engPlant === 'Both' || engPlant === issue.plant;
         });
         setEngineers(engs);
@@ -336,7 +336,7 @@ export default function IssueDetail({ issue, currentUser, onRefresh, onClose }: 
               
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 {/* 1. Self Assignment for engineering staff */}
-                {(currentUser.role === 'engineering_officer' || isAdmin) && (
+                {(['engineering_officer', 'engineering_manager', 'engineering_head', 'admin'].includes(currentUser.role)) && (
                   <button
                     onClick={() => {
                         setSelectedEngineerMobile(currentUser.mobile);
@@ -361,7 +361,7 @@ export default function IssueDetail({ issue, currentUser, onRefresh, onClose }: 
                       <option value="">-- Choose Engineer --</option>
                       {engineers.map(eng => (
                         <option key={eng.mobile} value={eng.mobile}>
-                          {eng.name} ({eng.plant || 'Plant 1'}) — {eng.mobile}
+                          {eng.name} ({eng.plant || 'Pen Plant'}) — {eng.mobile}
                         </option>
                       ))}
                     </select>

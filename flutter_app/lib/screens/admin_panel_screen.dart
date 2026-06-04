@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../api_service.dart';
 
 class admin_panel_screen extends StatefulWidget {
@@ -13,6 +14,7 @@ class admin_panel_screen extends StatefulWidget {
 class _admin_panel_screenState extends State<admin_panel_screen> {
   bool _loading = true;
   List<dynamic> _users = [];
+  List<dynamic> _auditLogs = [];
   bool _purging = false;
   bool _confirmPurge = false;
 
@@ -23,13 +25,13 @@ class _admin_panel_screenState extends State<admin_panel_screen> {
 
   String _selectedRole = 'engineering_officer';
   String _selectedDept = 'Production';
-  String _selectedPlant = 'Plant 1';
+  String _selectedPlant = 'Pen Plant';
 
   final List<String> _departments = [
     'Production', 'Engineering', 'QA', 'QC', 'IPQA', 'HR', 'Admin', 'Security', 'Accounts'
   ];
 
-  final List<String> _plants = ['Plant 1', 'Plant 2', 'Both'];
+  final List<String> _plants = ['Pen Plant', 'Non-Pen Plant', 'Both'];
 
   // All roles for Admin-controlled allocations
   final Map<String, String> _allRoles = {
@@ -54,8 +56,10 @@ class _admin_panel_screenState extends State<admin_panel_screen> {
     setState(() => _loading = true);
     try {
       final team = await ApiService.fetchUsers();
+      final logs = await ApiService.fetchAuditLogs();
       setState(() {
         _users = team;
+        _auditLogs = logs;
         _loading = false;
       });
     } catch (e) {
@@ -284,6 +288,7 @@ class _admin_panel_screenState extends State<admin_panel_screen> {
                             ),
                             icon: const Icon(Icons.copy, size: 14),
                             onPressed: () {
+                              Clipboard.setData(ClipboardData(text: inviteLink));
                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                 content: Text('Invite portal link copied securely!'),
                                 backgroundColor: Colors.indigo,
@@ -470,6 +475,128 @@ class _admin_panel_screenState extends State<admin_panel_screen> {
                         ),
                       );
                     },
+                  ),
+                  const SizedBox(height: 24),
+
+                  // 6. Security Audit Trail Logs listing
+                  Card(
+                    color: Colors.white,
+                    elevation: 0.5,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.policy_outlined, color: Colors.blueGrey, size: 18),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'SECURITY & REGISTRATION AUDIT TRAIL',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.blueGrey),
+                                  ),
+                                ],
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.refresh, size: 16, color: Colors.indigo),
+                                onPressed: _loadDirectory,
+                                tooltip: 'Refresh Trails',
+                              ),
+                            ],
+                          ),
+                          const Divider(),
+                          const SizedBox(height: 8),
+                          _auditLogs.isEmpty
+                              ? const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 24.0),
+                                  child: Center(
+                                    child: Text(
+                                      'No registration action trails exist in active corporate sandbox workspace.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic),
+                                    ),
+                                  ),
+                                )
+                              : ListView.separated(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: _auditLogs.length > 20 ? 20 : _auditLogs.length,
+                                  separatorBuilder: (ctx, idx) => Divider(color: Colors.grey[100]),
+                                  itemBuilder: (ctx, idx) {
+                                    final log = _auditLogs[idx];
+                                    final timestamp = log['timestamp'] != null
+                                        ? log['timestamp'].toString().replaceAll('T', ' ').substring(0, 19)
+                                        : 'Unknown Time';
+                                    
+                                    // Visual color categorization
+                                    Color indicatorColor = Colors.indigo;
+                                    IconData logIcon = Icons.info_outline;
+                                    if (log['type'] == 'role_change') {
+                                      indicatorColor = Colors.amber.shade800;
+                                      logIcon = Icons.admin_panel_settings_outlined;
+                                    } else if (log['type'] == 'registration') {
+                                      indicatorColor = Colors.emerald.shade700;
+                                      logIcon = Icons.group_add_outlined;
+                                    } else if (log['type'] == 'otp_fallback') {
+                                      indicatorColor = Colors.orange.shade800;
+                                      logIcon = Icons.phoenix_framework;
+                                    }
+
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 6.0),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            margin: const EdgeInsets.only(top: 2),
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: indicatorColor.withOpacity(0.1),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Icon(logIcon, color: indicatorColor, size: 14),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  log['details'] ?? 'System action performed.',
+                                                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: [
+                                                    Text(
+                                                      'Actor: ${log['actor'] ?? 'System'}',
+                                                      style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        timestamp,
+                                                        style: const TextStyle(fontSize: 9, color: Colors.grey),
+                                                        textAlign: TextAlign.end,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 24),
 

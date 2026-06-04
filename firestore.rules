@@ -24,17 +24,16 @@ service cloud.firestore {
       return resource.data;
     }
 
-    // 1. User validation helper
+    // Validation helpers matching the intermediate representation (IR)
+    function isValidCompany(data) {
+      return data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 256;
+    }
+
     function isValidUser(data) {
       return data.mobile is string && data.mobile.size() > 0 && data.mobile.size() <= 64 &&
              data.name is string && data.name.size() > 0 && data.name.size() <= 128 &&
              data.role is string && data.role.size() > 0 && data.role.size() <= 64;
-    }
-
-    match /users/{mobile} {
-      allow read: if true; // allow reading active rosters
-      allow create, update: if isValidId(mobile) && isValidUser(incoming());
-      allow delete: if true;
     }
 
     // 2. Issue ticket validation helper
@@ -46,23 +45,11 @@ service cloud.firestore {
              data.status is string && data.status.size() > 0 && data.status.size() <= 32;
     }
 
-    match /issues/{issueId} {
-      allow read: if true;
-      allow create, update: if isValidId(issueId) && isValidIssue(incoming());
-      allow delete: if true;
-    }
-
     // 3. WhatsApp dispatch audit helper
     function isValidWhatsappLog(data) {
       return data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
              data.recipient is string && data.recipient.size() > 0 && data.recipient.size() <= 256 &&
              data.message is string && data.message.size() > 0 && data.message.size() <= 10000;
-    }
-
-    match /whatsappLogs/{logId} {
-      allow read: if true;
-      allow create, update: if isValidId(logId) && isValidWhatsappLog(incoming());
-      allow delete: if true;
     }
 
     // 4. Scheduled broadcast reports helper
@@ -72,9 +59,86 @@ service cloud.firestore {
              data.frequency is string && data.frequency.size() > 0 && data.frequency.size() <= 64;
     }
 
+    // 5. Audit logs validation helper
+    function isValidAuditLog(data) {
+      return data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.timestamp is string && data.timestamp.size() > 0 && data.timestamp.size() <= 64 &&
+             data.type is string && data.type.size() > 0 && data.type.size() <= 128 &&
+             data.actor is string && data.actor.size() > 0 && data.actor.size() <= 128 &&
+             data.details is string && data.details.size() > 0 && data.details.size() <= 10000;
+    }
+
+    // Match blocks for both environment modes (production/testing)
+    
+    // 1. Companies
+    match /companies/{id} {
+      allow read: if true;
+      allow create, update: if isValidId(id) && isValidCompany(incoming());
+      allow delete: if true;
+    }
+    match /test_companies/{id} {
+      allow read: if true;
+      allow create, update: if isValidId(id) && isValidCompany(incoming());
+      allow delete: if true;
+    }
+
+    // 2. Users
+    match /users/{mobile} {
+      allow read: if true;
+      allow create, update: if isValidId(mobile) && isValidUser(incoming());
+      allow delete: if true;
+    }
+    match /test_users/{mobile} {
+      allow read: if true;
+      allow create, update: if isValidId(mobile) && isValidUser(incoming());
+      allow delete: if true;
+    }
+
+    // 3. Issues
+    match /issues/{issueId} {
+      allow read: if true;
+      allow create, update: if isValidId(issueId) && isValidIssue(incoming());
+      allow delete: if true;
+    }
+    match /test_issues/{issueId} {
+      allow read: if true;
+      allow create, update: if isValidId(issueId) && isValidIssue(incoming());
+      allow delete: if true;
+    }
+
+    // 4. WhatsApp Logs
+    match /whatsappLogs/{logId} {
+      allow read: if true;
+      allow create, update: if isValidId(logId) && isValidWhatsappLog(incoming());
+      allow delete: if true;
+    }
+    match /test_whatsappLogs/{logId} {
+      allow read: if true;
+      allow create, update: if isValidId(logId) && isValidWhatsappLog(incoming());
+      allow delete: if true;
+    }
+
+    // 5. Scheduled Broadcast Reports
     match /scheduledReports/{reportId} {
       allow read: if true;
       allow create, update: if isValidId(reportId) && isValidScheduledReport(incoming());
+      allow delete: if true;
+    }
+    match /test_scheduledReports/{reportId} {
+      allow read: if true;
+      allow create, update: if isValidId(reportId) && isValidScheduledReport(incoming());
+      allow delete: if true;
+    }
+
+    // 6. Audit Logs
+    match /auditLogs/{logId} {
+      allow read: if true;
+      allow create, update: if isValidId(logId) && isValidAuditLog(incoming());
+      allow delete: if true;
+    }
+    match /test_auditLogs/{logId} {
+      allow read: if true;
+      allow create, update: if isValidId(logId) && isValidAuditLog(incoming());
       allow delete: if true;
     }
   }

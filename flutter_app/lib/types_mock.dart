@@ -13,8 +13,8 @@ class TypesMock {
   ];
 
   static const List<String> plants = [
-    'Plant 1',
-    'Plant 2',
+    'Pen Plant',
+    'Non-Pen Plant',
     'Both'
   ];
 }
