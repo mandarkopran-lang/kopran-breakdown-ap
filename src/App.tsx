@@ -6,7 +6,6 @@ import BreakdownForm from './components/BreakdownForm';
 import IssueDetail from './components/IssueDetail';
 import WhatsAppLogsView from './components/WhatsAppLogsView';
 import AdminPanel from './components/AdminPanel';
-import KopranLogo from './components/KopranLogo';
 import { 
   Factory, LogOut, AppWindow, PlusCircle, MessageSquare, Shield, CheckCircle2, 
   AlertTriangle, Filter, Search, RefreshCw, Smartphone, ClipboardList, Clock, 
