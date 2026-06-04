@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "733453175811",
+    "project_id": "breakdownapp-d860a",
+    "storage_bucket": "breakdownapp-d860a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:733453175811:android:69fcee80f78c272c225236",
+        "android_client_info": {
+          "package_name": "com.kopran.breakdownapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmEK_iDCO-gECwrAJg8PsNaMdO8VxRjp4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
