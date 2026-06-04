@@ -539,11 +539,11 @@ class _admin_panel_screenState extends State<admin_panel_screen> {
                                       indicatorColor = Colors.amber.shade800;
                                       logIcon = Icons.admin_panel_settings_outlined;
                                     } else if (log['type'] == 'registration') {
-                                      indicatorColor = Colors.emerald.shade700;
+                                      indicatorColor = Colors.green.shade700;
                                       logIcon = Icons.group_add_outlined;
                                     } else if (log['type'] == 'otp_fallback') {
                                       indicatorColor = Colors.orange.shade800;
-                                      logIcon = Icons.phoenix_framework;
+                                      logIcon = Icons.refresh;
                                     }
 
                                     return Padding(
