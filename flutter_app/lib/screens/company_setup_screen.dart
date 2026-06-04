@@ -117,7 +117,7 @@ class _CompanySetupScreenState extends State<CompanySetupScreen> {
                 color: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: Colors.slate.shade100, width: 1.5),
+                  side: BorderSide(color: Colors.grey.shade100, width: 1.5),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(28.0),
@@ -165,7 +165,7 @@ class _CompanySetupScreenState extends State<CompanySetupScreen> {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.slate,
+                              color: Colors.grey,
                               height: 1.45,
                             ),
                           ),
@@ -193,7 +193,7 @@ class _CompanySetupScreenState extends State<CompanySetupScreen> {
                             prefixIcon: const Icon(Icons.business, size: 18),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: Colors.slate.shade200),
+                              borderSide: BorderSide(color: Colors.grey.shade200),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -232,7 +232,7 @@ class _CompanySetupScreenState extends State<CompanySetupScreen> {
                             prefixIcon: const Icon(Icons.image_outlined, size: 18),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: Colors.slate.shade200),
+                              borderSide: BorderSide(color: Colors.grey.shade200),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
