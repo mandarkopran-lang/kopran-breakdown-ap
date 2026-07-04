@@ -1,11 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import '../api_service.dart';
+import '../services/firestore_service.dart';
+import '../models/app_user.dart';
+import '../models/company.dart';
 
 class CompanySetupScreen extends StatefulWidget {
-  final Map<String, dynamic> currentUser;
-  final Function(Map<String, dynamic>) onSetupComplete;
+  final AppUser currentUser;
+  final Function(AppUser updatedUser, Company company) onSetupComplete;
 
   const CompanySetupScreen({
     super.key,
@@ -18,28 +20,28 @@ class CompanySetupScreen extends StatefulWidget {
 }
 
 class _CompanySetupScreenState extends State<CompanySetupScreen> {
+  final _firestoreService = FirestoreService();
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _logoUrlController = TextEditingController();
   bool _submitting = false;
 
-  // Custom premium logo presets for friendly experience
   final List<Map<String, String>> _logoPresets = [
     {
-      'title': 'Industrial Green',
+      'title': 'Industrial Teal',
       'url': 'https://images.unsplash.com/photo-1513828742140-ccaa34f32678?w=150&auto=format&fit=crop&q=60',
     },
     {
-      'title': 'Tech Blue',
+      'title': 'Digital Blue',
       'url': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=150&auto=format&fit=crop&q=60',
     },
     {
-      'title': 'Pharma Accent',
-      'url': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=150&auto=format&fit=crop&q=60',
+      'title': 'Precision Amber',
+      'url': 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=150&auto=format&fit=crop&q=60',
     },
     {
-      'title': 'Precision Orange',
-      'url': 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=150&auto=format&fit=crop&q=60',
+      'title': 'Pharma Green',
+      'url': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=150&auto=format&fit=crop&q=60',
     },
   ];
 
@@ -56,38 +58,49 @@ class _CompanySetupScreenState extends State<CompanySetupScreen> {
       final name = _nameController.text.trim();
       final logoUrl = _logoUrlController.text.trim();
 
-      final res = await ApiService.registerNewCompany(name, logoUrl);
+      // Generate secure unique invite code
+      final String cleanPrefix = name.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+      final String shortPrefix = cleanPrefix.length > 5 ? cleanPrefix.substring(0, 5) : cleanPrefix;
+      final String suffix = DateTime.now().millisecondsSinceEpoch.toString().substring(10);
+      final String companyId = '$shortPrefix-$suffix';
 
-      if (res['success'] == true) {
-        final Map<String, dynamic> updatedUser = res['user'];
-        final Map<String, dynamic> company = res['company'];
+      final List<String> defaultPlants = ['Pen Plant', 'Non-Pen Plant', 'Packaging Plant'];
+      final List<String> defaultDepts = ['Production', 'Engineering', 'QA', 'QC', 'Admin'];
 
-        // Persist to SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('shift_sync_user', jsonEncode(updatedUser));
-        await prefs.setString('shift_sync_company', jsonEncode(company));
+      // Create company model
+      final company = Company(
+        id: companyId,
+        name: name,
+        logoUrl: logoUrl,
+        plants: defaultPlants,
+        departments: defaultDepts,
+        createdAt: DateTime.now(),
+      );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Welcome! ${name} registration initialized successfully.', style: const TextStyle(fontWeight: FontWeight.bold)),
-            backgroundColor: Colors.green[800],
-          ),
-        );
+      // Save company inside Firestore
+      await _firestoreService.createCompany(company);
 
-        // Notify parent state to switch screen to Dashboard
-        widget.onSetupComplete(updatedUser);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(res['error'] ?? 'Company registration failed. Please try again.'),
-            backgroundColor: Colors.red[800],
-          ),
-        );
-      }
+      // Link Admin user profile with companyId
+      final updatedUser = widget.currentUser.copyWith(
+        companyId: companyId,
+        approved: true,
+      );
+
+      await _firestoreService.createUserProfile(updatedUser);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Welcome! Company $name registered. Invite code is $companyId'),
+          backgroundColor: Colors.green[800],
+        ),
+      );
+
+      widget.onSetupComplete(updatedUser, company);
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Networking error: $e'),
+          content: Text('Registration error: $e'),
           backgroundColor: Colors.red[800],
         ),
       );
@@ -111,13 +124,12 @@ class _CompanySetupScreenState extends State<CompanySetupScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Headline Title
               Card(
                 elevation: 0,
                 color: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: Colors.grey.shade100, width: 1.5),
+                  side: BorderSide(color: Colors.slate.shade200),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(28.0),
@@ -129,7 +141,7 @@ class _CompanySetupScreenState extends State<CompanySetupScreen> {
                         Center(
                           child: Icon(
                             Icons.domain,
-                            size: 48,
+                            size: 56,
                             color: Colors.indigo[800],
                           ),
                         ),
@@ -138,7 +150,7 @@ class _CompanySetupScreenState extends State<CompanySetupScreen> {
                           child: Text(
                             'One-Time Setup',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.w900,
                               color: Colors.indigo[600],
                               letterSpacing: 1.5,
@@ -151,106 +163,67 @@ class _CompanySetupScreenState extends State<CompanySetupScreen> {
                             'REGISTER YOUR COMPANY',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 18,
                               fontWeight: FontWeight.w900,
                               color: Color(0xFF0F172A),
-                              letterSpacing: -0.5,
                             ),
                           ),
                         ),
                         const SizedBox(height: 12),
                         const Center(
                           child: Text(
-                            'Please enter your official enterprise details below. This registers a secure, isolated sandbox tenant workspace and generates dynamic invite credentials.',
+                            'Please enter your official enterprise details below. This registers a secure, isolated database tenant workspace and generates dynamic invite credentials.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                              height: 1.45,
-                            ),
+                            style: TextStyle(fontSize: 11, color: Colors.slate, height: 1.4),
                           ),
                         ),
                         const SizedBox(height: 24),
                         const Divider(),
                         const SizedBox(height: 16),
 
-                        // Company name entry field
                         const Text(
                           'Company Name',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF334155),
-                          ),
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
                         ),
                         const SizedBox(height: 6),
                         TextFormField(
                           controller: _nameController,
                           keyboardType: TextInputType.text,
-                          style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
+                          style: const TextStyle(fontSize: 13),
                           decoration: InputDecoration(
-                            hintText: 'e.g. Kopran Engineering Group',
+                            hintText: 'e.g. Engineering Group',
                             prefixIcon: const Icon(Icons.business, size: 18),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: Colors.grey.shade200),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: Colors.indigo.shade400, width: 2),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           ),
                           validator: (v) {
                             if (v == null || v.trim().isEmpty) {
-                              return 'Enterprise Company Name is required.';
-                            }
-                            if (v.trim().length < 3) {
-                              return 'Name must contain at least 3 characters.';
+                              return 'Company Name is required.';
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 20),
 
-                        // Logo configuration option
                         const Text(
                           'Company Logo Icon URL',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF334155),
-                          ),
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
                         ),
                         const SizedBox(height: 6),
                         TextFormField(
                           controller: _logoUrlController,
                           keyboardType: TextInputType.url,
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF0F172A)),
+                          style: const TextStyle(fontSize: 11),
                           decoration: InputDecoration(
                             hintText: 'e.g. https://domain.com/logo.png',
                             prefixIcon: const Icon(Icons.image_outlined, size: 18),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: Colors.grey.shade200),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: Colors.indigo.shade400),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           ),
                         ),
                         const SizedBox(height: 12),
 
-                        // Helpful Preset Logo Options selector
                         const Text(
                           '— OR CHOOSE AN AESTHETIC THEME PRESET Logo',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey,
-                          ),
+                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey),
                         ),
                         const SizedBox(height: 8),
                         Wrap(
@@ -282,12 +255,7 @@ class _CompanySetupScreenState extends State<CompanySetupScreen> {
 
                         const SizedBox(height: 28),
                         _submitting
-                            ? const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 8),
-                                  child: CircularProgressIndicator(),
-                                ),
-                              )
+                            ? const Center(child: CircularProgressIndicator())
                             : SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
@@ -296,18 +264,11 @@ class _CompanySetupScreenState extends State<CompanySetupScreen> {
                                     backgroundColor: const Color(0xFF0F172A),
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(vertical: 14),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                   ),
                                   child: const Text(
                                     'INITIALIZE WORKSPACE CONSOLE',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 1.0,
-                                    ),
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                                   ),
                                 ),
                               ),

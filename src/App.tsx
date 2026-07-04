@@ -73,7 +73,11 @@ export default function App() {
         })
         .catch(() => {
           // Fallback if not physically initialized yet
-          setCurrentCompany({ id: currentUser.companyId, name: 'Kopran Laboratories' });
+          const isKopran = currentUser.companyId?.toUpperCase() === 'KOPRAN';
+          setCurrentCompany({ 
+            id: currentUser.companyId, 
+            name: isKopran ? 'Engineering' : `${currentUser.companyId} Systems` 
+          });
         });
     } else {
       setCurrentCompany(null);
@@ -484,8 +488,8 @@ export default function App() {
         <div className="hidden lg:flex items-center gap-2 text-[11px] font-extrabold text-teal-400 uppercase tracking-wider">
           <Building2 className="h-4 w-4" />
           <span>Tenant Organization:</span>
-          <span className="text-emerald-100">{currentCompany?.name || 'Kopran Laboratories'}</span>
-          <span className="text-[10px] bg-slate-800 text-slate-400 border border-slate-700 py-0.5 px-2 rounded-full font-mono">{currentCompany?.id || 'KOPRAN'}</span>
+          <span className="text-emerald-100">{currentCompany?.name || 'Enterprise Workspace'}</span>
+          <span className="text-[10px] bg-slate-800 text-slate-400 border border-slate-700 py-0.5 px-2 rounded-full font-mono">{currentCompany?.id || 'ENTERPRISE'}</span>
         </div>
 
         {/* Right Side Window Controls (Our prompt Minimize & Exit Button requirement!) */}
@@ -550,7 +554,9 @@ export default function App() {
                 <h1 className="text-sm font-black text-slate-950 leading-none uppercase tracking-wide">
                   {currentCompany?.name ? currentCompany.name : 'Break Down Monitor'}
                 </h1>
-                <p className="text-[9px] text-amber-600 font-extrabold uppercase tracking-widest mt-1">Engineering Breakdown Monitor</p>
+                <p className="text-[9px] text-amber-600 font-extrabold uppercase tracking-widest mt-1">
+                  {currentUser?.department || 'Engineering'} Breakdown Monitor
+                </p>
               </div>
             </div>
 

@@ -1,7 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fauth;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'api_service.dart';
+import 'services/firestore_service.dart';
+import 'models/app_user.dart';
+import 'models/company.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/company_setup_screen.dart';
@@ -9,13 +13,11 @@ import 'screens/company_setup_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Clean initialization of saved variables
-  final prefs = await SharedPreferences.getInstance();
-  if (prefs.getString('kopran_env_mode') == null) {
-    prefs.setString('kopran_env_mode', 'production'); // Default to Production (Live)!
-  }
-  if (prefs.getString('custom_backend_url') == null) {
-    prefs.setString('custom_backend_url', ApiService.baseProductionUrl);
+  // Robust initialization of Firebase Core with safe fallback catches
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint("Firebase Core Initialization failed: $e. Operating in sandbox/mock simulation.");
   }
 
   runApp(const KopranBreakdownSystemApp());
@@ -35,9 +37,9 @@ class KopranBreakdownSystemApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF4F46E5), // Indigo Accent
           primary: const Color(0xFF1E293B),   // Dark Navy
-          secondary: const Color(0xFF0F766E), // Teal
+          secondary: const Color(0xFF0F766E), // Teal Accent
           surface: Colors.white,
-          background: const Color(0xFFF8FAFC), // Slate 50
+          background: const Color(0xFFF8FAFC),
         ),
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFF1E293B),
@@ -58,152 +60,132 @@ class AuthSessionWrapper extends StatefulWidget {
 }
 
 class _AuthSessionWrapperState extends State<AuthSessionWrapper> {
+  final _firestoreService = FirestoreService();
   bool _loading = true;
-  Map<String, dynamic>? _userObj;
-  String _envMode = 'production';
+  AppUser? _currentUser;
+  Company? _currentCompany;
 
   @override
   void initState() {
     super.initState();
-    _checkUserSession();
+    _checkActiveSession();
   }
 
-  Future<void> _checkUserSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userJson = prefs.getString('shift_sync_user');
-    final savedEnv = prefs.getString('kopran_env_mode') ?? 'production';
-
-    setState(() {
-      _envMode = savedEnv;
-      if (userJson != null) {
-        _userObj = jsonDecode(userJson);
-      }
-      _loading = false;
-    });
-  }
-
-  Future<void> _toggleEnvMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    final nextMode = _envMode == 'production' ? 'testing' : 'production';
-    await prefs.setString('kopran_env_mode', nextMode);
+  // Verify if a session uid exists locally or within Firebase Auth
+  Future<void> _checkActiveSession() async {
+    setState(() => _loading = true);
     
-    // Clear user session to enforce re-auth or fresh configuration on environment migration
-    await prefs.remove('shift_sync_user');
+    try {
+      final fauth.FirebaseAuth auth = fauth.FirebaseAuth.instance;
+      final fauth.User? firebaseUser = auth.currentUser;
 
+      if (firebaseUser != null) {
+        final appUser = await _firestoreService.getUserProfile(firebaseUser.uid);
+        if (appUser != null) {
+          Company? comp;
+          if (appUser.companyId.isNotEmpty) {
+            comp = await _firestoreService.getCompany(appUser.companyId);
+          }
+          setState(() {
+            _currentUser = appUser;
+            _currentCompany = comp;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Session check exception: $e");
+    } finally {
+      setState(() {
+        _loading = false;
+      });
+    }
+  }
+
+  // Handle successful login
+  void _onLoginSuccess(AppUser user, Company? company) {
     setState(() {
-      _envMode = nextMode;
-      _userObj = null;
+      _currentUser = user;
+      _currentCompany = company;
     });
+  }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Switched to ${nextMode.toUpperCase()} environment mode successfully!'),
-        backgroundColor: nextMode == 'testing' ? Colors.amber[800] : Colors.green[800],
-      ),
-    );
+  // Handle company setup complete for newly registered admin
+  void _onSetupComplete(AppUser updatedUser, Company company) {
+    setState(() {
+      _currentUser = updatedUser;
+      _currentCompany = company;
+    });
   }
 
   Future<void> _signOut() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('shift_sync_user');
-    setState(() {
-      _userObj = null;
-    });
+    setState(() => _loading = true);
+    try {
+      final fauth.FirebaseAuth auth = fauth.FirebaseAuth.instance;
+      await auth.signOut();
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('session_uid');
+
+      setState(() {
+        _currentUser = null;
+        _currentCompany = null;
+      });
+    } catch (e) {
+      debugPrint("Sign out error: $e");
+    } finally {
+      setState(() => _loading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
+        backgroundColor: Color(0xFFF8FAFC),
         body: Center(
-          child: CircularProgressIndicator(),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text(
+                'INITIALIZING CONSOLE...',
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
+              )
+            ],
+          ),
         ),
       );
     }
 
-    final isTestMode = _envMode == 'testing';
+    // Routing Logic based on User Profile registration and Company Setup
+    if (_currentUser == null) {
+      return Scaffold(
+        body: SafeArea(
+          child: LoginScreen(onLoginSuccess: _onLoginSuccess),
+        ),
+      );
+    }
 
+    // Admin without a registered companyId goes to Company Registration Setup Screen
+    if (_currentUser!.role == 'admin' && _currentUser!.companyId.isEmpty) {
+      return Scaffold(
+        body: SafeArea(
+          child: CompanySetupScreen(
+            currentUser: _currentUser!,
+            onSetupComplete: _onSetupComplete,
+          ),
+        ),
+      );
+    }
+
+    // All active co-workers proceed directly to real-time interactive Dashboard
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            // Safe Global Header Notification Banner
-            GestureDetector(
-              onTap: _toggleEnvMode,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                color: isTestMode ? const Color(0xFFF59E0B) : const Color(0xFF047857),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      isTestMode ? Icons.science_outlined : Icons.bolt,
-                      color: isTestMode ? const Color(0xFF451A03) : Colors.white,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        isTestMode
-                            ? '🧪 SANDBOX TESTING MODE (CLOSED GROUP)'
-                            : '⚡ REAL-TIME PRODUCTION MODE (LIVE)',
-                        style: TextStyle(
-                          color: isTestMode ? const Color(0xFF451A03) : Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        'SWITCH',
-                        style: TextStyle(
-                          color: isTestMode ? const Color(0xFF451A03) : Colors.white,
-                          fontSize: 8,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Expanded(
-              child: _userObj == null
-                  ? LoginScreen(
-                      onLoginSuccess: (user) {
-                        setState(() {
-                          _userObj = user;
-                        });
-                      },
-                    )
-                  : (_userObj!['role'] == 'admin' &&
-                          (_userObj!['companyId'] == null ||
-                              _userObj!['companyId']
-                                  .toString()
-                                  .trim()
-                                  .isEmpty))
-                      ? CompanySetupScreen(
-                          currentUser: _userObj!,
-                          onSetupComplete: (updatedUser) {
-                            setState(() {
-                              _userObj = updatedUser;
-                            });
-                          },
-                        )
-                      : DashboardScreen(
-                          currentUser: _userObj!,
-                          onSignOut: _signOut,
-                        ),
-            ),
-          ],
+        child: DashboardScreen(
+          currentUser: _currentUser!,
+          currentCompany: _currentCompany,
+          onSignOut: _signOut,
         ),
       ),
     );

@@ -1,0 +1,604 @@
+{
+  "companies": [
+    {
+      "logoUrl": "",
+      "name": "Engineering",
+      "createdAt": "2026-06-02T10:40:01.842Z",
+      "id": "KOPRAN"
+    }
+  ],
+  "users": [
+    {
+      "mobile": "8530222706",
+      "plant": "Pen Plant",
+      "name": "Mandar Salkade",
+      "department": "Production",
+      "role": "supervisor"
+    },
+    {
+      "role": "qa_manager",
+      "department": "QA",
+      "plant": "Both",
+      "name": "Hitesh Shah",
+      "mobile": "+91 66666 55555"
+    },
+    {
+      "role": "admin",
+      "mobile": "+91 76543 21098",
+      "plant": "Both",
+      "name": "Vikram Singh",
+      "department": "Admin"
+    },
+    {
+      "role": "plant_manager",
+      "name": "Meeta Patel",
+      "plant": "Pen Plant",
+      "mobile": "+91 77777 66666",
+      "department": "Production"
+    },
+    {
+      "mobile": "+91 87654 32109",
+      "name": "Anil Sharma",
+      "plant": "Pen Plant",
+      "department": "Engineering",
+      "role": "engineering_officer"
+    },
+    {
+      "plant": "Both",
+      "name": "Karan Johar",
+      "mobile": "+91 88888 77777",
+      "department": "Engineering",
+      "role": "engineering_manager"
+    },
+    {
+      "role": "supervisor",
+      "name": "Rajesh Kumar",
+      "mobile": "+91 98765 43210",
+      "plant": "Pen Plant",
+      "department": "Production"
+    },
+    {
+      "department": "Engineering",
+      "plant": "Both",
+      "mobile": "+91 99999 88888",
+      "name": "Sunil Verma",
+      "role": "engineering_head"
+    }
+  ],
+  "issues": [
+    {
+      "machine": "PLC Control Station 01",
+      "createdBy": "+91 98765 43210",
+      "assignmentDateTime": "2026-05-28T08:45:00Z",
+      "status": "closed",
+      "id": "BD-20260528-0001",
+      "createdByName": "Rajesh Kumar",
+      "escalationStatus": "normal",
+      "plant": "Pen Plant",
+      "slaMinutes": 120,
+      "assignedTo": "+91 87654 32109",
+      "assignedToName": "Anil Sharma",
+      "description": "Abnormal high-pitch squealing and excessive vibration at spindle rpm above 2000. Potential bearing wear.",
+      "history": [
+        {
+          "timestamp": "2026-05-28T08:30:00Z",
+          "updatedBy": "+91 98765 43210",
+          "status": "open",
+          "notes": "Breakdown raised.",
+          "updatedByName": "Rajesh Kumar"
+        },
+        {
+          "timestamp": "2026-05-28T08:45:00Z",
+          "updatedBy": "+91 87654 32109",
+          "status": "assigned",
+          "notes": "Self-assigned for immediate review.",
+          "updatedByName": "Anil Sharma"
+        },
+        {
+          "updatedByName": "Anil Sharma",
+          "notes": "Taking down casing to inspect spindle bearing state.",
+          "status": "in_progress",
+          "timestamp": "2026-05-28T08:50:00Z",
+          "updatedBy": "+91 87654 32109"
+        },
+        {
+          "status": "resolved",
+          "timestamp": "2026-05-28T10:15:00Z",
+          "updatedBy": "+91 87654 32109",
+          "updatedByName": "Anil Sharma",
+          "notes": "Spoke repacked, grease injected, vibration checks clear."
+        },
+        {
+          "updatedByName": "Rajesh Kumar",
+          "notes": "Machine verified under test load. Closing ticket.",
+          "timestamp": "2026-05-28T10:30:00Z",
+          "updatedBy": "+91 98765 43210",
+          "status": "closed"
+        }
+      ],
+      "department": "Production",
+      "area": "Manufacturing (Pen Plant)",
+      "resolutionRemarks": "Dismantled shield cover. Cleaned spindle assembly. Replaced dry lubrication grease with high-temp industrial lithium grease and adjusted sensor alignment. RPM test run up to 4000 successful.",
+      "closureDateTime": "2026-05-28T10:30:00Z",
+      "createdDateTime": "2026-05-28T08:30:00Z",
+      "resolvedDateTime": "2026-05-28T10:15:00Z",
+      "aiRecommendations": {
+        "possibleCauses": [
+          "Lack of grease in spindle bearing",
+          "Misalignment of work-holding chuck",
+          "Vibration sensor out of calibration"
+        ],
+        "estimatedSeverity": "High",
+        "stepsToFix": [
+          "Apply grade-3 spindle lubrication grease",
+          "Perform vibration spectrum analysis",
+          "Re-calibrate vibration trip threshold"
+        ],
+        "recommendedSlaMinutes": 120
+      }
+    },
+    {
+      "assignedToName": "Sunil Verma",
+      "assignedTo": "+91 99999 88888",
+      "description": "Main steam boiler heater output dropping pressure from 300 bar down to 180 bar during active strokes. Hydraulic oil pool detected in tray.",
+      "history": [
+        {
+          "status": "open",
+          "timestamp": "2026-05-28T14:00:00Z",
+          "updatedBy": "+91 98765 43210",
+          "updatedByName": "Rajesh Kumar",
+          "notes": "Breakdown raised."
+        },
+        {
+          "updatedBy": "+91 99999 88888",
+          "timestamp": "2026-05-28T14:15:00Z",
+          "status": "assigned",
+          "updatedByName": "Sunil Verma",
+          "notes": "Assigned by maintenance supervisor."
+        },
+        {
+          "notes": "Procuring seal ring and oil canister from inventory.",
+          "updatedByName": "Sunil Verma",
+          "updatedBy": "+91 99999 88888",
+          "timestamp": "2026-05-28T14:30:00Z",
+          "status": "in_progress"
+        },
+        {
+          "status": "resolved",
+          "timestamp": "2026-05-28T16:30:00Z",
+          "updatedBy": "+91 99999 88888",
+          "updatedByName": "Sunil Verma",
+          "notes": "Seals replaced and system test completed. Awaiting supervisor closure confirmation."
+        },
+        {
+          "status": "closed",
+          "timestamp": "2026-05-30T04:51:20.499Z",
+          "updatedBy": "SYSTEM",
+          "notes": "Ticket auto-closed. Resolution deemed resolved successfully after 2 hours timeout limit exceeded without supervisor rejection.",
+          "updatedByName": "Auto-Timeout Worker"
+        }
+      ],
+      "assignmentDateTime": "2026-05-28T14:15:00Z",
+      "status": "closed",
+      "createdBy": "+91 98765 43210",
+      "machine": "Steam Boiler SB-50",
+      "plant": "Non-Pen Plant",
+      "slaMinutes": 180,
+      "createdByName": "Rajesh Kumar",
+      "id": "BD-20260528-0002",
+      "escalationStatus": "normal",
+      "resolutionRemarks": "Reformed pressure seal ring on main ram. Refilled 12 liters of ISO 46 hydraulic system oil. Tested under pressure, steady holding at 295 bar.",
+      "resolvedDateTime": "2026-05-28T16:30:00Z",
+      "aiRecommendations": {
+        "recommendedSlaMinutes": 180,
+        "stepsToFix": [
+          "Inspect main cylinder collar for leakage",
+          "Isolate slide pilot valve and check pressure",
+          "Bleed air from manifold and cycle cylinder"
+        ],
+        "estimatedSeverity": "Critical",
+        "possibleCauses": [
+          "Worn main ram cylinder double-acting lip seal",
+          "Proportional control valve internal bypass",
+          "Hydraulic line pressure relief failure"
+        ]
+      },
+      "createdDateTime": "2026-05-28T14:00:00Z",
+      "area": "Utility (Non-Pen Plant)",
+      "department": "Engineering"
+    },
+    {
+      "department": "Production",
+      "area": "Packing (Pen Plant)",
+      "createdDateTime": "2026-05-29T04:15:00Z",
+      "aiRecommendations": {
+        "recommendedSlaMinutes": 60,
+        "estimatedSeverity": "Medium",
+        "stepsToFix": [
+          "Disconnect tool power, discharge backup bus for 2 mins",
+          "Verify shielding braid on communication cable",
+          "Substitute secondary tool body to isolate hardware issue"
+        ],
+        "possibleCauses": [
+          "Controller memory supercapacitor dead",
+          "External electromagnetic noise interfering with RS485 connection",
+          "Transducer ribbon wire strain damaged"
+        ]
+      },
+      "createdByName": "Rajesh Kumar",
+      "id": "BD-20260529-0001",
+      "escalationStatus": "escalated",
+      "plant": "Pen Plant",
+      "slaMinutes": 60,
+      "machine": "Inkjet Batch Coder IC05",
+      "createdBy": "+91 98765 43210",
+      "status": "in_progress",
+      "assignmentDateTime": "2026-05-29T04:30:00Z",
+      "history": [
+        {
+          "updatedBy": "+91 98765 43210",
+          "timestamp": "2026-05-29T04:15:00Z",
+          "status": "open",
+          "notes": "Raised critical assembly block.",
+          "updatedByName": "Rajesh Kumar"
+        },
+        {
+          "notes": "Assigned.",
+          "updatedByName": "Anil Sharma",
+          "updatedBy": "+91 87654 32109",
+          "timestamp": "2026-05-29T04:30:00Z",
+          "status": "assigned"
+        },
+        {
+          "status": "in_progress",
+          "timestamp": "2026-05-29T04:45:00Z",
+          "updatedBy": "+91 87654 32109",
+          "updatedByName": "Anil Sharma",
+          "notes": "Consulting manufacturer parameter manual. Checking controller logic voltage."
+        },
+        {
+          "updatedByName": "SLA Monitor Service",
+          "notes": "⚠️ CRITICAL: SLA limit of 60 minutes crossed. Raising escalation flag!",
+          "updatedBy": "SYSTEM",
+          "timestamp": "2026-05-30T03:54:05.692Z",
+          "status": "in_progress"
+        }
+      ],
+      "assignedToName": "Anil Sharma",
+      "assignedTo": "+91 87654 32109",
+      "description": "Device calibration fault E-104 flashing. Controller won't hold torque program parameters, resets to zero during assembly cyles."
+    },
+    {
+      "area": "Manufacturing (Pen Plant)",
+      "department": "Production",
+      "aiRecommendations": null,
+      "createdDateTime": "2026-06-02T10:46:26.675Z",
+      "slaMinutes": 120,
+      "plant": "Pen Plant",
+      "escalationStatus": "escalated",
+      "id": "BD-20260602-0001",
+      "createdByName": "Rajesh Kumar",
+      "status": "in_progress",
+      "assignmentDateTime": "2026-06-02T10:47:36.287Z",
+      "machine": "Granulation 1",
+      "createdBy": "+91 98765 43210",
+      "history": [
+        {
+          "notes": "Breakdown ticket initiated on Granulation 1. SLA set to 120 minutes.",
+          "updatedByName": "Rajesh Kumar",
+          "status": "open",
+          "timestamp": "2026-06-02T10:46:26.675Z",
+          "updatedBy": "+91 98765 43210"
+        },
+        {
+          "updatedByName": "Anil Sharma",
+          "notes": "Ticket assigned to Engineer Vikram Singh (+91 76543 21098).",
+          "status": "assigned",
+          "timestamp": "2026-06-02T10:47:36.287Z",
+          "updatedBy": "+91 87654 32109"
+        },
+        {
+          "updatedBy": "+91 76543 21098",
+          "timestamp": "2026-06-02T11:10:33.847Z",
+          "status": "in_progress",
+          "notes": "Repair operations started. Diagnostic checking in progress.",
+          "updatedByName": "Vikram Singh"
+        },
+        {
+          "status": "in_progress",
+          "updatedBy": "SYSTEM",
+          "timestamp": "2026-06-02T12:46:27.262Z",
+          "notes": "⚠️ CRITICAL: SLA limit of 120 minutes crossed. Raising escalation flag!",
+          "updatedByName": "SLA Monitor Service"
+        }
+      ],
+      "description": "PLC Failure",
+      "assignedToName": "Vikram Singh",
+      "assignedTo": "+91 76543 21098",
+      "companyId": "KOPRAN"
+    },
+    {
+      "aiRecommendations": null,
+      "createdDateTime": "2026-06-02T11:13:15.412Z",
+      "area": "Manufacturing (Non-Pen Plant)",
+      "department": "Production",
+      "history": [
+        {
+          "notes": "Breakdown ticket initiated on Change Room. SLA set to 120 minutes.",
+          "updatedByName": "Rajesh Kumar",
+          "status": "open",
+          "updatedBy": "+91 98765 43210",
+          "timestamp": "2026-06-02T11:13:15.412Z"
+        },
+        {
+          "notes": "Ticket assigned to Engineer Vikram Singh (+91 76543 21098).",
+          "updatedByName": "Anil Sharma",
+          "status": "assigned",
+          "timestamp": "2026-06-02T11:13:52.486Z",
+          "updatedBy": "+91 87654 32109"
+        },
+        {
+          "notes": "⚠️ CRITICAL: SLA limit of 120 minutes crossed. Raising escalation flag!",
+          "updatedByName": "SLA Monitor Service",
+          "updatedBy": "SYSTEM",
+          "timestamp": "2026-06-02T13:13:27.287Z",
+          "status": "assigned"
+        }
+      ],
+      "description": "Change room not cleaned",
+      "assignedTo": "+91 76543 21098",
+      "assignedToName": "Vikram Singh",
+      "companyId": "KOPRAN",
+      "plant": "Non-Pen Plant",
+      "slaMinutes": 120,
+      "escalationStatus": "escalated",
+      "createdByName": "Rajesh Kumar",
+      "id": "BD-20260602-0002",
+      "assignmentDateTime": "2026-06-02T11:13:52.486Z",
+      "status": "assigned",
+      "createdBy": "+91 98765 43210",
+      "machine": "Change Room"
+    }
+  ],
+  "whatsappLogs": [
+    {
+      "message": "*🔴 NEW BREAKDOWN REPORTED*\n\n*ID:* BD-20260528-0001\n*Plant:* Plant 1\n*Machine:* PLC Control Station 01\n*Supervisor:* Rajesh Kumar (+91 98765 43210)\n*Remarks:* Abnormal vibration above 2000 RPM.\n\n_Please assign an engineer to resolve this SLA: 120min._",
+      "type": "issue_created",
+      "status": "sent",
+      "timestamp": "2026-05-28T08:31:00Z",
+      "recipient": "Plant 1 Breakdown WhatsApp Group",
+      "apiUsed": "Simulated Whatsapp Gateway",
+      "id": "WA-1716962400000"
+    },
+    {
+      "id": "WA-1716963300000",
+      "recipient": "Anil Sharma (+91 87654 32109)",
+      "apiUsed": "Simulated Whatsapp Gateway",
+      "timestamp": "2026-05-28T08:46:00Z",
+      "status": "sent",
+      "type": "assigned",
+      "message": "*🔧 ASSIGNMENT ALERT*\n\nBreakdown *BD-20260528-0001* has been assigned to you.\n*Machine:* PLC Control Station 01\n*Description:* Abnormal high squealing.\n*Target SLA:* 120min.\n\n_Click the portal to mark 'In Progress' immediately._"
+    },
+    {
+      "recipient": "Engineering",
+      "apiUsed": "Simulated Whatsapp Gateway",
+      "id": "WA-1780116677222-768",
+      "status": "sent",
+      "timestamp": "2026-05-30T04:51:17.222Z",
+      "type": "roster_registered",
+      "message": "*📲 WHATSAPP ROSTER SYNC*\n\nWelcome *Mandar Salkade* (SUPERVISOR) to Kopran Breakdowns!\nMobile ID: 8530222706\nPlant Assignment: Plant 1\n\n_He/she has been successfully registered and added to the *Engineering* corporate WhatsApp group. Actions and assignment alerts are active._"
+    },
+    {
+      "type": "closed",
+      "message": "*🏁 AUTO-CLOSED (DEEMED APPROVED)*\n\n*Ticket:* BD-20260528-0002\n*Machine:* Steam Boiler SB-50 (Utility (Plant 2))\n*Status:* Closed (Deemed Resolved)\n\n_System Auto-Timeout Worker: Ticket closed automatically because the 2-hour verification confirmation period has passed successfully without objection._",
+      "timestamp": "2026-05-30T04:51:20.500Z",
+      "status": "sent",
+      "id": "WA-1780116680500-294",
+      "recipient": "Engineering",
+      "apiUsed": "Simulated Whatsapp Gateway"
+    },
+    {
+      "id": "WA-1780397186683-576",
+      "apiUsed": "Simulated Whatsapp Gateway",
+      "recipient": "Engineering",
+      "type": "issue_created",
+      "message": "*🚨 NEW BREAKDOWN REPORTED*\n  \n*Ticket ID:* BD-20260602-0001\n*Plant:* Pen Plant -> Production\n*Location:* Manufacturing (Pen Plant) / *Machine:* Granulation 1\n*Description:* PLC Failure\n*Reported By:* Rajesh Kumar (+91 98765 43210)\n\n_Maintenance engineers, please assign and pick up immediately!_",
+      "timestamp": "2026-06-02T10:46:26.683Z",
+      "status": "sent"
+    },
+    {
+      "recipient": "Vikram Singh (+91 76543 21098)",
+      "apiUsed": "Simulated Whatsapp Gateway",
+      "id": "WA-1780397256287-376",
+      "status": "sent",
+      "timestamp": "2026-06-02T10:47:36.287Z",
+      "message": "*🔧 TASK ASSIGNMENT ALERT*\n\n*Ticket:* BD-20260602-0001\n*Machine:* Granulation 1 (Manufacturing (Pen Plant))\n*Description:* PLC Failure\n*Reported By:* Rajesh Kumar\n*Assigned To:* You (Vikram Singh)\n*SLA Time:* 120 mins\n\n_Start repair operations and update ticket progress status to 'In Progress' immediately._",
+      "type": "assigned"
+    },
+    {
+      "status": "sent",
+      "timestamp": "2026-06-02T11:13:15.413Z",
+      "type": "issue_created",
+      "message": "*🚨 NEW BREAKDOWN REPORTED*\n  \n*Ticket ID:* BD-20260602-0002\n*Plant:* Non-Pen Plant -> Production\n*Location:* Manufacturing (Non-Pen Plant) / *Machine:* Change Room\n*Description:* Change room not cleaned\n*Reported By:* Rajesh Kumar (+91 98765 43210)\n\n_Maintenance engineers, please assign and pick up immediately!_",
+      "recipient": "Engineering",
+      "apiUsed": "Simulated Whatsapp Gateway",
+      "id": "WA-1780398795413-518"
+    },
+    {
+      "recipient": "Vikram Singh (+91 76543 21098)",
+      "apiUsed": "Simulated Whatsapp Gateway",
+      "id": "WA-1780398832487-326",
+      "message": "*🔧 TASK ASSIGNMENT ALERT*\n\n*Ticket:* BD-20260602-0002\n*Machine:* Change Room (Manufacturing (Non-Pen Plant))\n*Description:* Change room not cleaned\n*Reported By:* Rajesh Kumar\n*Assigned To:* You (Vikram Singh)\n*SLA Time:* 120 mins\n\n_Start repair operations and update ticket progress status to 'In Progress' immediately._",
+      "type": "assigned",
+      "status": "sent",
+      "timestamp": "2026-06-02T11:13:52.487Z"
+    },
+    {
+      "id": "WA-1780404387263-236",
+      "recipient": "Production Management Escalation Channel",
+      "apiUsed": "Simulated Whatsapp Gateway",
+      "timestamp": "2026-06-02T12:46:27.263Z",
+      "status": "sent",
+      "type": "issue_created",
+      "message": "*🚨 CRITICAL BREAKDOWN SLA ESCALATION alert (PRODUCTION)*\n\n*Ticket ID:* BD-20260602-0001\n*Machine:* Granulation 1 (Manufacturing (Pen Plant))\n*Status:* IN_PROGRESS\n*Elapsed:* 120 minutes (Target limit: 120 mins)\n*Assigned To:* Vikram Singh\n\n_Direct intervention required to prevent assembly downtime line blocks!_"
+    },
+    {
+      "recipient": "Production Management Escalation Channel",
+      "apiUsed": "Simulated Whatsapp Gateway",
+      "id": "WA-1780404425415-839",
+      "message": "*🚨 CRITICAL BREAKDOWN SLA ESCALATION alert (PRODUCTION)*\n\n*Ticket ID:* BD-20260602-0001\n*Machine:* Granulation 1 (Manufacturing (Pen Plant))\n*Status:* IN_PROGRESS\n*Elapsed:* 120 minutes (Target limit: 120 mins)\n*Assigned To:* Vikram Singh\n\n_Direct intervention required to prevent assembly downtime line blocks!_",
+      "type": "issue_created",
+      "status": "sent",
+      "timestamp": "2026-06-02T12:47:05.415Z"
+    },
+    {
+      "type": "issue_created",
+      "message": "*🚨 CRITICAL BREAKDOWN SLA ESCALATION alert (PRODUCTION)*\n\n*Ticket ID:* BD-20260602-0002\n*Machine:* Change Room (Manufacturing (Non-Pen Plant))\n*Status:* ASSIGNED\n*Elapsed:* 120 minutes (Target limit: 120 mins)\n*Assigned To:* Vikram Singh\n\n_Direct intervention required to prevent assembly downtime line blocks!_",
+      "timestamp": "2026-06-02T13:13:27.288Z",
+      "status": "sent",
+      "id": "WA-1780406007287-47",
+      "recipient": "Production Management Escalation Channel",
+      "apiUsed": "Simulated Whatsapp Gateway"
+    }
+  ],
+  "scheduledReports": [
+    {
+      "frequency": "daily",
+      "id": "REP-01",
+      "active": true,
+      "type": "Daily Operations Review",
+      "time": "07:30",
+      "recipientGroup": "Plant Leadership Mobile Group"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "AUD-1780396832250-123",
+      "actor": "+91 76543 21098",
+      "details": "SMS OTP delivery attempt failed (Carrier Response Error: 504 Gateway Timeout). Safely auto-triggered fallback WhatsApp delivery. OTP 266948 delivered successfully.",
+      "type": "otp_delivery_fallback",
+      "companyId": "",
+      "timestamp": "2026-06-02T10:40:32.250Z"
+    },
+    {
+      "id": "AUD-1780397070163-63",
+      "actor": "+91 76543 21098",
+      "details": "SMS OTP delivery attempt failed (Carrier Response Error: 504 Gateway Timeout). Safely auto-triggered fallback WhatsApp delivery. OTP 602105 delivered successfully.",
+      "type": "otp_delivery_fallback",
+      "companyId": "",
+      "timestamp": "2026-06-02T10:44:30.163Z"
+    },
+    {
+      "id": "AUD-1780397097335-666",
+      "actor": "+91 76543 21098",
+      "details": "SMS OTP delivery attempt failed (Carrier Response Error: 504 Gateway Timeout). Safely auto-triggered fallback WhatsApp delivery. OTP 792381 delivered successfully.",
+      "type": "otp_delivery_fallback",
+      "companyId": "",
+      "timestamp": "2026-06-02T10:44:57.335Z"
+    },
+    {
+      "id": "AUD-1780397132541-928",
+      "actor": "+91 98765 43210",
+      "details": "SMS OTP delivery attempt failed (Carrier Response Error: 504 Gateway Timeout). Safely auto-triggered fallback WhatsApp delivery. OTP 941435 delivered successfully.",
+      "type": "otp_delivery_fallback",
+      "companyId": "",
+      "timestamp": "2026-06-02T10:45:32.541Z"
+    },
+    {
+      "details": "SMS OTP delivery attempt failed (Carrier Response Error: 504 Gateway Timeout). Safely auto-triggered fallback WhatsApp delivery. OTP 483857 delivered successfully.",
+      "id": "AUD-1780397200077-439",
+      "actor": "+91 99999 88888",
+      "timestamp": "2026-06-02T10:46:40.077Z",
+      "companyId": "",
+      "type": "otp_delivery_fallback"
+    },
+    {
+      "id": "AUD-1780397248157-983",
+      "actor": "+91 87654 32109",
+      "details": "SMS OTP delivery attempt failed (Carrier Response Error: 504 Gateway Timeout). Safely auto-triggered fallback WhatsApp delivery. OTP 732933 delivered successfully.",
+      "companyId": "",
+      "type": "otp_delivery_fallback",
+      "timestamp": "2026-06-02T10:47:28.157Z"
+    },
+    {
+      "details": "SMS OTP delivery attempt failed (Carrier Response Error: 504 Gateway Timeout). Safely auto-triggered fallback WhatsApp delivery. OTP 978152 delivered successfully.",
+      "actor": "+91 87654 32109",
+      "id": "AUD-1780397318402-92",
+      "timestamp": "2026-06-02T10:48:38.402Z",
+      "type": "otp_delivery_fallback",
+      "companyId": ""
+    },
+    {
+      "timestamp": "2026-06-02T11:03:55.510Z",
+      "companyId": "",
+      "type": "otp_delivery_fallback",
+      "details": "SMS OTP delivery attempt failed (Carrier Response Error: 504 Gateway Timeout). Safely auto-triggered fallback WhatsApp delivery. OTP 384255 delivered successfully.",
+      "id": "AUD-1780398235510-101",
+      "actor": "+91 76543 21098"
+    },
+    {
+      "companyId": "",
+      "type": "otp_delivery_fallback",
+      "timestamp": "2026-06-02T11:04:28.241Z",
+      "id": "AUD-1780398268241-551",
+      "actor": "+91 87654 32109",
+      "details": "SMS OTP delivery attempt failed (Carrier Response Error: 504 Gateway Timeout). Safely auto-triggered fallback WhatsApp delivery. OTP 402032 delivered successfully."
+    },
+    {
+      "id": "AUD-1780398594780-834",
+      "actor": "+91 87654 32109",
+      "details": "SMS OTP delivery attempt failed (Carrier Response Error: 504 Gateway Timeout). Safely auto-triggered fallback WhatsApp delivery. OTP 261855 delivered successfully.",
+      "companyId": "",
+      "type": "otp_delivery_fallback",
+      "timestamp": "2026-06-02T11:09:54.780Z"
+    },
+    {
+      "timestamp": "2026-06-02T11:10:19.025Z",
+      "type": "otp_delivery_fallback",
+      "companyId": "",
+      "details": "SMS OTP delivery attempt failed (Carrier Response Error: 504 Gateway Timeout). Safely auto-triggered fallback WhatsApp delivery. OTP 887121 delivered successfully.",
+      "actor": "+91 76543 21098",
+      "id": "AUD-1780398619025-498"
+    },
+    {
+      "timestamp": "2026-06-02T11:12:30.805Z",
+      "companyId": "",
+      "type": "otp_delivery_fallback",
+      "details": "SMS OTP delivery attempt failed (Carrier Response Error: 504 Gateway Timeout). Safely auto-triggered fallback WhatsApp delivery. OTP 173806 delivered successfully.",
+      "id": "AUD-1780398750805-585",
+      "actor": "+91 98765 43210"
+    },
+    {
+      "details": "SMS OTP delivery attempt failed (Carrier Response Error: 504 Gateway Timeout). Safely auto-triggered fallback WhatsApp delivery. OTP 349410 delivered successfully.",
+      "id": "AUD-1780398823229-107",
+      "actor": "+91 87654 32109",
+      "timestamp": "2026-06-02T11:13:43.229Z",
+      "companyId": "",
+      "type": "otp_delivery_fallback"
+    },
+    {
+      "timestamp": "2026-06-02T12:07:00.104Z",
+      "companyId": "",
+      "type": "otp_delivery_fallback",
+      "details": "SMS OTP delivery attempt failed (Carrier Response Error: 504 Gateway Timeout). Safely auto-triggered fallback WhatsApp delivery. OTP 652012 delivered successfully.",
+      "id": "AUD-1780402020104-335",
+      "actor": "+91 76543 21098"
+    },
+    {
+      "timestamp": "2026-06-02T12:07:50.437Z",
+      "type": "otp_delivery_fallback",
+      "companyId": "",
+      "details": "SMS OTP delivery attempt failed (Carrier Response Error: 504 Gateway Timeout). Safely auto-triggered fallback WhatsApp delivery. OTP 266831 delivered successfully.",
+      "id": "AUD-1780402070437-855",
+      "actor": "+91 87654 32109"
+    },
+    {
+      "id": "AUD-1780402085270-786",
+      "actor": "+91 76543 21098",
+      "details": "SMS OTP delivery attempt failed (Carrier Response Error: 504 Gateway Timeout). Safely auto-triggered fallback WhatsApp delivery. OTP 523093 delivered successfully.",
+      "companyId": "",
+      "type": "otp_delivery_fallback",
+      "timestamp": "2026-06-02T12:08:05.270Z"
+    }
+  ]
+}

@@ -115,7 +115,7 @@ export default function AdminPanel({ currentUser, onRefreshStats, onCompanyUpdat
           // Fallback if KOPRAN/current tenant profile not populated yet
           const initialCompany = { 
             id: currentUser.companyId || 'KOPRAN', 
-            name: isKopran ? 'Kopran Laboratories' : 'Company Setup',
+            name: isKopran ? 'Engineering' : (currentUser.companyId ? `${currentUser.companyId} Systems` : 'Enterprise Workspace'),
             plants: fallbackPlants,
             departments: fallbackDepts
           };

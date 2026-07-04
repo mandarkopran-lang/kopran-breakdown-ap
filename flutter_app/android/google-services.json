@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "655408040792",
+    "project_id": "breakdownapp-37d50",
+    "storage_bucket": "breakdownapp-37d50.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:655408040792:android:fbf64f0783c77a2279f32d",
+        "android_client_info": {
+          "package_name": "com.machine.breakdownapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYYCylvIohBvMfy28W6E6njvY532pzlY8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

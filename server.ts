@@ -60,7 +60,7 @@ function initializeDb() {
   if (!fs.existsSync(activeFile)) {
     const initialDb = {
       companies: [
-        { id: "KOPRAN", name: "Kopran Engineering", logoUrl: "", createdAt: "2026-05-28T00:00:00Z" }
+        { id: "KOPRAN", name: "Engineering", logoUrl: "", createdAt: "2026-05-28T00:00:00Z" }
       ],
       users: [
         { mobile: "+91 98765 43210", name: "Rajesh Kumar", role: "supervisor", department: "Production", plant: "Pen Plant", companyId: "KOPRAN", approved: true },
@@ -245,7 +245,7 @@ async function syncFromFirestoreToLocal() {
     if (users.length > 0 || issues.length > 0) {
       const activeFile = getDbFile();
       const currentDb = {
-        companies: companies.length > 0 ? companies : [{ id: "KOPRAN", name: "Kopran Engineering", logoUrl: "", createdAt: new Date().toISOString() }],
+        companies: companies.length > 0 ? companies : [{ id: "KOPRAN", name: "Engineering", logoUrl: "", createdAt: new Date().toISOString() }],
         users,
         issues,
         whatsappLogs,

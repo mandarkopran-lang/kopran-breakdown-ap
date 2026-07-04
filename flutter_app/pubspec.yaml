@@ -1,5 +1,5 @@
 name: kopran_breakdown_app
-description: "Kopran Engineering - Machine Breakdown Reporting and Tracking mobile app."
+description: "Engineering - Machine Breakdown Reporting and Tracking mobile app."
 version: 1.0.0+1
 
 environment:
@@ -14,6 +14,10 @@ dependencies:
   image_picker: ^1.0.7
   fl_chart: ^0.66.0
   cupertino_icons: ^1.0.6
+  firebase_core: ^3.1.0
+  firebase_auth: ^5.1.0
+  cloud_firestore: ^5.0.1
+  firebase_storage: ^12.0.1
 
 dev_dependencies:
   flutter_test:
